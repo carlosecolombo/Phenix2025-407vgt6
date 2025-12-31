@@ -1,0 +1,34 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Make Build (Debug)",
+			"type": "shell",
+			"command": "make",
+			"args": [
+				"-j"
+			],
+			"options": {
+				"cwd": "${workspaceFolder}/Debug"
+			},
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			}
+		},
+		{
+			"label": "Make Clean (Debug)",
+			"type": "shell",
+			"command": "make",
+			"args": [
+				"clean"
+			],
+			"options": {
+				"cwd": "${workspaceFolder}/Debug"
+			}
+		}
+	]
+}

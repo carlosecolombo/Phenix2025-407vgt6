@@ -1,0 +1,1498 @@
+/*
+ * 		Drivers de la máquina
+ *
+   	Fecha inicialización	:	19/05/2022
+	Fecha actualización 	:	14/09/2025
+	Realizado por	    	:	C.E. Colombo
+	Compilador utilizado	:	ST - Eclipse IDE
+	Proyecto	    		:	Phenix 2022
+	Archivo		    		: 	Testeos.c
+	Versión	   	    		:	2.10.00
+	Objetivo	    		:	Rutinas de testeos del funcionamiento del:
+							1.- Teclado															--> ok Modificado
+							2.- Tensiones Generales												--> ok
+								2.1- Tensiones de la CPU - fuentes digitales y V.batería		--> ok
+								2.2- Tensiones del A/D 1 - fuentes analógicas					--> ok
+								2.3- Tensiones del A/D 2 - fuentes analógicas si está la placa	--> ok
+								2.4- Calibración de los canales del A/D del micro				--> ok
+							3.- Comunicación
+								3.1.- Canal de comunicación serie con la PC						--> ok
+								3.2- Canal de comunicación serie con las placas de salida		--> ok
+								3.3- Canal de comunicación serie con el módulo ESO8266			--> ok
+							4.- Ajustes del reloj
+								4.1- Carga de la hora											--> ok
+								4.2- Carga de la fecha											--> ok
+							5.- Mediciones A/D 8 canales										--> ok
+								5.1- Armar pantalla												--> ok
+								5.2- Mostrar datos de los 8 canales								--> ok
+							6.- Calibración de las balanzas
+								6.1- Armar pantalla												--> ok
+								6.2- Preguntar celda a calibrar									--> ok
+								6.3- Tomar cero, Tomar peso										-->
+								6.4- Mostrar peso en cuentas y gramos							-->
+*/
+
+/* Includes ------------------------------------------------------------------*/
+#define  PosVariables   1   	/* 	0 = Variables propias
+									1 = Variables externas */
+
+
+/* USER CODE BEGIN Includes */
+#include "main.h"
+#include "Variables.h"
+#include "Def_LCD.h"
+
+extern void 	Clr_LCD(void);
+extern void 	cmd_ini(uint16_t cmd);
+extern unsigned int status_display(void);
+extern void 	Print_LCD(uint8_t col, uint8_t fila, int8_t *cadena);
+extern int8_t 	Teclado(void);
+extern void 	Pongo_Hora(int8_t Hora, int8_t renglon);
+extern void 	Leo_AD(int8_t Canal);
+extern int8_t 	* mi_itoa(uint16_t numero, int8_t *buffer, int8_t Largo, int8_t saco_ceros);// Convertir un entero en un dato ASCII de 5 caracteres
+extern int8_t 	*mi_ltoa(unsigned long numero, int8_t *buffer, int Largo,int saco_ceros);	// Convertir un entero long en un dato ASCII de 10 caracteres
+//extern int16_t 	mi_atoi(int8_t * s,int8_t Largo);									// Convertir una cadena ASCII de 5 caracteres en un entero
+//extern void 	write_Pagina(void);
+extern void 	Tx_char(uint8_t tx_ch, int8_t Usart);  								/* Transmito un caracter */
+extern int8_t 	* str_date (int8_t Actualizar);
+extern int8_t 	* str_time (int8_t Actualizar);
+extern void   	Init_Medicion();													// Inicializa la suma acumulativa de valores medidos y el contador de cantidad de mediciones
+extern void   	Beep(void);															/* Activar Buzzer */
+extern int8_t 	Primer_Cero(int8_t Num_Celda);										// Tomar el primer cero
+extern int8_t 	Tomar_Peso(int8_t Num_Celda);										// Tomar el peso
+extern void		Medicion(void);														// Medicion de los 8 canales del conversor AD
+extern void 	Calculo_Velocidad(void);											// Calculo de la velocidad de la maquina
+extern void     Toma_Tara_Platillos(void);											// Medicion de taras de los platillos
+
+void   Modo_Testeos(void);
+void   Pru_Comunicacion(void);
+void   Presentacion_Gral(void);
+void   Presentacion_Comu(void);
+void   Presentacion_ComuPC(void);
+void   Presentacion_ComuPsalidas(void);
+void   Presentacion_ComuESP(void);
+void   Presentacion_VCPU(void);
+void   Presentacion_VAD(void);
+void   Presentacion_Sincro(void);
+void   Presentacion_Toma_Taras(void);
+void   Transmitir(int8_t Canal);
+void   Pru_Teclado(void);
+void   Medir_Tension(void);
+void   Tension_AD1(void);
+void   Carga_Reloj(void);
+void   Reviso_Sincro(void);
+void   Reviso_Sincro1(void);
+void   Mido_Vbat(void);
+void   Mido_33V(void);
+void   Mido_5VD(void);
+void   Mido_5VA(void);
+void   Mido_5NVA(void);
+void   Leer_AD8(void);
+void   Leer_AD8_1(void);
+void   Presentacion_Calibracion_AD(void);
+void   Calibrar_AD8();
+void   Tomar_Taras(void);
+
+/**
+ *   Rutina         :  void Modo_Testeos(void)
+ *   Entrada        :  None
+ *   Parametros     :  None
+ *   Returns        :  None
+ *   Preconditions  :  None
+ *   Descripcion    :  seleccionar que testeo se va a realizar
+*/
+void Modo_Testeos(void)
+	{
+	int8_t	Caracter[2];
+
+	HAL_UART_Receive_IT  (&huart1, &RxDato1, 1);	// Recibo la PC por Interrupciones
+	HAL_UART_Receive_IT  (&huart6, &RxDato6, 1);	// Recibo las Placas de salida  por Interrupciones
+	HAL_UART_Receive_IT  (&huart4, &RxDato5, 1);	// Recibo el módulo ECP8266
+
+	Presentacion_Gral();
+	while(Caracter[0] != Esca)					// Tecla Enter en ASCII
+		{
+		Pongo_Hora(false,0);
+		Caracter[0] = Teclado();				// Reviso el teclado
+		if(Caracter[0] != FREE)
+			{
+			switch (Caracter[0])
+				{
+				case 1:
+					Pru_Teclado();
+					break;
+				case 2:
+					Medir_Tension();
+					break;
+				case 3:
+					Pru_Comunicacion();
+		  			break;
+				case 4:
+					Carga_Reloj();
+					break;
+				case 5:
+					Leer_AD8();
+					break;
+				case 6:
+					Calibrar_AD8();
+					break;
+				case 7:
+					Reviso_Sincro();
+					break;
+				case 8:
+					Tomar_Taras();
+					break;
+				default:
+					Caracter[0] = Esca;
+					break;
+				}
+			Presentacion_Gral();
+			}
+		}
+	Time_Buzzer = 0;          				/* Timer del Buzzer */
+	HAL_UART_AbortReceive_IT(&huart1);
+	HAL_UART_AbortReceive_IT(&huart6);
+	HAL_UART_AbortReceive_IT(&huart4);
+	}
+/**
+ *   Rutinas       : void Presentacion_Gral(void), void Presentacion_Comu(void),
+ *   				 void Presentacion_VCPU(void), void Presentacion_VAD1(void),
+ *   				 void Presentacion_VAD2(void),
+ *   Descripcion   : Pantallas de presentación de los testeos
+*/
+void Presentacion_Gral(void)
+	{
+	Clr_LCD();											/* Borro el LCD */
+	Print_LCD(0,0,(int8_t *) " Test  General      ");
+	Print_LCD(0,1,(int8_t *) "1.Teclado 2.Tension ");
+	Print_LCD(0,2,(int8_t *) "3.Serie   4.Reloj   ");
+	Print_LCD(0,3,(int8_t *) "5.A/D 8   6.Calcelda");
+	Time_Clock = 0;   									/* Timer para poner la hora */
+	Beep();
+	}
+
+void Presentacion_Comu(void)
+	{
+	Clr_LCD();											/* Borro el LCD */
+	Print_LCD(0,0,(int8_t *) "   Pruebas Series   ");
+	Print_LCD(0,1,(int8_t *) "1.PC      2.P.sali");
+	Print_LCD(0,2,(int8_t *) "3.Internet        ");
+	Print_LCD(0,3,(int8_t *) "Esc SALIR");
+	Beep();
+	Time_Clock = 0; 									/* Timer para poner la hora */
+	}
+void Presentacion_ComuPC(void)
+	{
+	Clr_LCD();											/* Borro el LCD */
+	Print_LCD(0,0,(int8_t *) "    Canal PC  ");
+	Print_LCD(0,1,(int8_t *) "Tx:");
+	Print_LCD(0,2,(int8_t *) "Rx:");
+	Print_LCD(0,3,(int8_t *) "Esc SALIR");
+	Beep();
+	Time_Clock = 0;         							/* Timer para poner la hora */
+	}
+void Presentacion_ComuPsalidas(void)
+	{
+	Clr_LCD();											/* Borro el LCD */
+	Print_LCD(0,0,(int8_t *) "   Canal P.Salidas  ");
+	Print_LCD(0,1,(int8_t *) "Tx:");
+	Print_LCD(0,2,(int8_t *) "Rx:");
+	Print_LCD(0,3,(int8_t *) "Esc SALIR");
+	Beep();
+	Time_Clock = 0;         							/* Timer para poner la hora */
+	}
+void Presentacion_ComuESP(void)
+	{
+	Clr_LCD();											/* Borro el LCD */
+	Print_LCD(0,0,(int8_t *) "    Canal ESP   ");
+	Print_LCD(0,1,(int8_t *) "Tx:");
+	Print_LCD(0,2,(int8_t *) "Rx:");
+	Print_LCD(0,3,(int8_t *) "Esc SALIR");
+	Beep();
+	Time_Clock = 0;										/* Timer para poner la hora */
+	}
+
+void Presentacion_VCPU(void)
+	{
+	Clr_LCD();											/* Borro el LCD */
+	Print_LCD(0,0,(int8_t *) "  Tension CPU       ");
+	Print_LCD(0,1,(int8_t *) "V33  0.00V V5D 0.00V");
+	Print_LCD(0,2,(int8_t *) "Vbat 0.00V VSen.    ");
+	Print_LCD(0,3,(int8_t *) "Esc SALIR   Ent->A/D");
+	Beep();
+	Time_Clock = 0; 									/* Timer para poner la hora */
+	}
+
+void Presentacion_VAD(void)
+	{
+	Clr_LCD();											/* Borro el LCD */
+	Print_LCD(0,0,(int8_t *) "  Tension A/D      ");
+	Print_LCD(0,1,(int8_t *) "V+5 = 0.00V        ");
+	Print_LCD(0,2,(int8_t *) "V-5 = 0.00V        ");
+	Print_LCD(0,3,(int8_t *) "Esc SALIR          ");
+	Beep();
+	Time_Clock = 0; 									/* Timer para poner la hora */
+	}
+
+
+void Presentacion_Reloj(void)
+	{
+	Clr_LCD();											/* Borro el LCD */
+	Print_LCD(0,0,(int8_t *) "   Ajuste Reloj     ");
+	Print_LCD(0,1,(int8_t *) "Fecha:");
+	Print_LCD(0,2,(int8_t *) "Hora:           DS 1");
+	Print_LCD(0,3,(int8_t *) "Esc SALIR  Ent Ajus.");
+	Beep();
+	Time_Clock = 0; 									/* Timer para poner la hora */
+	}
+
+void Presentacion_AD0(void)
+	{
+	Clr_LCD();											/* Borro el LCD */
+	Print_LCD(0,0,(int8_t *) " Datos A/D 1-4      ");
+	Print_LCD(0,1,(int8_t *) "C1.        C2.      ");
+	Print_LCD(0,2,(int8_t *) "C3.        C4.      ");
+	Print_LCD(0,3,(int8_t *) "Esc SALIR   Ent Mas.");
+	Beep();
+	Time_Clock = 0; 									/* Timer para poner la hora */
+	}
+
+void Presentacion_AD1(void)
+	{
+	Clr_LCD();											/* Borro el LCD */
+	Print_LCD(0,0,(int8_t *) " Datos A/D 5-8      ");
+	Print_LCD(0,1,(int8_t *) "C5.        C6.      ");
+	Print_LCD(0,2,(int8_t *) "C7.        C8.      ");
+	Print_LCD(0,3,(int8_t *) "Esc SALIR           ");
+	Time_Clock = 0; 									/* Timer para poner la hora */
+	Beep();
+	}
+
+void Presentacion_Calibracion_AD(void)
+	{
+	Clr_LCD();											/* Borro el LCD */
+	Print_LCD(0,0,(int8_t *) " Cal. Celdas        ");
+	Print_LCD(0,1,(int8_t *) "N.Balanza: 1        ");
+	Print_LCD(0,2,(int8_t *) "Cu:      Peso:    gr");
+	Print_LCD(0,3,(int8_t *) "Esc SALIR  Cero(Ent)");
+	Time_Clock = 0; 									/* Timer para poner la hora */
+	Beep();
+	}
+
+void Presentacion_Sincro(void)
+	{
+	Clr_LCD();											/* Borro el LCD */
+	Print_LCD(0,0,(int8_t *) "  Sicronismos       ");
+	Print_LCD(0,1,(int8_t *) "Maq.       Velo.    ");
+	Print_LCD(0,2,(int8_t *) "N.Ejes     Eje      ");
+	Print_LCD(0,3,(int8_t *) "Esc SALIR   Ent Mas.");
+	Beep();
+	Time_Clock = 0; 									/* Timer para poner la hora */
+	}
+
+void Presentacion_Sincro1(void)
+	{
+	Clr_LCD();											/* Borro el LCD */
+	Print_LCD(0,0,(int8_t *) " Sicronismos 1      ");
+	Print_LCD(0,1,(int8_t *) "Sec.     Tot.Sin    ");
+	Print_LCD(0,2,(int8_t *) "Puls.Sincro         ");
+	Print_LCD(0,3,(int8_t *) "Esc SALIR           ");
+	Beep();
+	Time_Clock = 0; 									/* Timer para poner la hora */
+	}
+
+void Presentacion_Toma_Taras(void)
+{
+	Clr_LCD();											/* Borro el LCD */
+	Print_LCD(0,0,(int8_t *) " Toma Taras         ");
+	Print_LCD(0,1,(int8_t *) "Eje:                ");
+	Print_LCD(0,2,(int8_t *) "Esperando Plato 1...");
+	Print_LCD(0,3,(int8_t *) "Esc SALIR           ");
+	Beep();
+	Time_Clock = 0; 									/* Timer para poner la hora */
+}
+
+/**
+ *   Rutina         :  void Pru_Comunicacion(void)
+ *   Entrada        :  None
+ *   Parametros     :  None
+ *   Returns        :  None
+ *   Preconditions  :  None
+ *   Descripcion    :  seleccionar que testeo se va a realizar
+*/
+void Pru_Comunicacion(void)
+	{
+	int8_t x = 0;
+	int8_t	Caracter[2];
+
+    Flag_Pruebas = true;
+	Presentacion_Comu();
+	while(x != 5)
+		{
+		Pongo_Hora(false,3);
+		Caracter[0] = Teclado();						// Reviso el teclado
+		if(Caracter[0] != FREE)
+			{
+			switch (Caracter[0])
+				{
+				case 1:
+					Presentacion_ComuPC();
+					Transmitir(Comu_PC);
+					break;
+				case 2:
+					Presentacion_ComuPsalidas();
+					Transmitir(Comu_PSalidas);
+					break;
+				case 3:
+					Presentacion_ComuESP();
+					Transmitir(Comu_ESP);
+		  			break;
+				case Esca:
+					x = 5;
+					break;
+				}
+			Presentacion_Comu();
+			}
+		}
+    Flag_Pruebas = false;
+	}
+/**
+ *   Rutina         :  void Transmitir(void)
+ *   Entrada        :  None
+ *   Parametros     :  None
+ *   Returns        :  None
+ *   Preconditions  :  None
+ *   Descripcion    :
+*/
+
+void Transmitir(int8_t Canal)
+	{
+	Conta = 3;
+	int8_t	RxDato[2];
+	int8_t	Caracter[2];
+	int8_t	Aux_Caracter[2];
+
+	while(Aux_Caracter[0] != Esca)						// Tecla TL en ASCII
+		{
+		Pongo_Hora(false,3);
+		Caracter[0] = Teclado();						// Reviso el teclado
+		Aux_Caracter[0] = Caracter[0];
+		if(Caracter[0] != FREE)
+			{
+			if(Conta == 3)
+				{
+				Print_LCD(0,1,(int8_t *) "Tx:                 ");
+				Print_LCD(0,2,(int8_t *) "Rx:                 ");
+				}
+
+			Caracter[0] = Caracter[0] + '0';
+			Caracter[1] = 0;
+			Print_LCD(Conta,1,(int8_t *) & Caracter);	// Pongo la Tecla presionada, Lo paso a ASCII
+			Tx_char(Caracter[0], Canal);
+
+			if(Conta > 18)
+				Conta = 2;
+
+			Conta++;
+			}
+		switch(Canal)
+			{
+			case 0:										// Recibo de la PC
+				RxDato[0] = RxDato1;
+				break;
+			case 1:										// Recibo de la Placa de salida
+				RxDato[0] = RxDato6;
+				break;
+			case 2:										// Recibo del módulo ECP8266
+				RxDato[0] = RxDato5;
+				break;
+			}
+	    if(RxDato[0] !=  Null)
+	    	{
+	    	RxDato[1] = Null;
+	    	Print_LCD(Conta -1, 2,(int8_t *)&RxDato[0]);// Pongo la Tecla presionada en display
+	    	RxDato[0] = Null;
+	    	RxDato1 = Null;
+	    	RxDato6 = Null;
+	    	RxDato5 = Null;
+	    	}
+		}
+
+
+	}
+/**
+ *   Rutina          :  void Pru_Teclado(void)
+ *   Entrada         :  None
+ *   Parametros      :  None
+ *   Returns         :  None
+ *   Preconditions   :  None
+ *   Descripcion     :  Prueba del teclado, se sale presionando 3 veces el Nº 8
+*/
+void Pru_Teclado(void)
+	{
+	int8_t x = 0;
+	int8_t y = 0;
+	int8_t	Caracter[2];
+
+	Clr_LCD();											/* Borro el LCD */
+    Print_LCD(0,0,(int8_t *) "Prueba de Teclado");
+	Print_LCD(0,3,(int8_t *) "888. SALIR");
+	Time_Clock = 0;         							/* Timer para poner la hora */
+
+	while(y != 24)
+		{
+		Pongo_Hora(false,3);
+		Caracter[0] = Teclado();						// Reviso el teclado
+		if(Caracter[0] != FREE)
+			{
+			if(x == 0)
+				{
+				Print_LCD(0,1,(int8_t *) "                    ");
+				}
+
+			if(Caracter[0] == 8)
+				y = y + 8;
+			else
+				y = 0;
+
+			Caracter[0] = Caracter[0] + '0';
+			Caracter[1] = 0;
+			Print_LCD(x,1,(int8_t *) & Caracter);		// Pongo la Tecla presionada, Lo paso a ASCII
+
+			if(x > 18)
+				x = -1;
+
+			x++;
+			}
+		}
+	}
+
+
+/**
+ *   Rutina         :  void Medir_Tension(void)
+ *   Entrada        :  None
+ *   Parametros     :  None
+ *   Returns        :  None
+ *   Preconditions  :  None
+ *   Descripcion    :  Ver las tensiones de los canales 14, 15 y 18 del A/D del micro
+ *   					PC4 = canal 14  --> VM3
+ *   					PC3 = canal 13  --> VM5D
+ *   					canal 18        --> VM Vbat.
+ *   					En la rutina "Leo_AD" al valor del canal se le suma 10 para poder leer
+ *   					correctamente, se usa la variable "canal" desde 0 para poder guardar
+ *   					los datos en el array de los totalizadores y calcular los valores de
+ *   					tensión
+*/
+void Medir_Tension  (void)
+	{
+	int8_t	Caracter[2];
+	int8_t x = 0;
+	int8_t Canal;
+	int8_t aux_Dato[4];
+	int16_t Vbat;
+
+	Presentacion_VCPU();
+    Canal = 8;											// Leo el canal Vbat = 8 internamente canal 18
+	Leo_AD(Canal);
+    while(x != 1)
+    	{
+    	switch (Canal)
+    		{
+    		case 8:
+    	    	if(Flag_Medicion == true)
+    	    		{
+    	    		Vbat = (PromAD[Canal] * Coef_Vbat_Def) / 4095;	// Calculo la tensión
+    	    		mi_ltoa(Vbat, & aux_Dato[0], 4, true);			// Convierto a ASCII
+   	    			aux_Dato[0] = aux_Dato[1];						// Pongo el punto decimal
+    				aux_Dato[1] = '.';
+    	    		Print_LCD(5,2, (int8_t *) aux_Dato);			// Pongo el dato en el display
+    	    	    Canal = 4;										// Cargo el proximo canal a leer
+    	    	    Leo_AD(Canal);									// Leo el canal
+    	    		}
+    	    	break;
+    		case 4:
+    	    	if(Flag_Medicion == true)
+    	    		{
+    	    		Vbat = (PromAD[Canal] * Coef_PC4_Def) / 4095;	// Calculo la tensión
+    	    		mi_ltoa(Vbat, & aux_Dato[0], 4, true);			// Convierto a ASCII
+   	    			aux_Dato[0] = aux_Dato[1];						// Pongo el punto decimal
+    				aux_Dato[1] = '.';
+    	    		Print_LCD(5,1, (int8_t *) aux_Dato);			// Pongo el dato en el display
+    	    	    Canal = 3;										// Cargo el proximo canal a leer
+    	    	    Leo_AD(Canal);									// Leo el canal
+    	    		}
+    	    	break;
+    		case 3:
+    	    	if(Flag_Medicion == true)
+    	    		{
+    	    		Vbat = (PromAD[Canal] * Coef_PC3_Def) / 4095;	// Calculo la tensión
+    	    		mi_ltoa(Vbat, & aux_Dato[0], 4, true);			// Convierto a ASCII
+   	    			aux_Dato[0] = aux_Dato[1];						// Pongo el punto decimal
+    				aux_Dato[1] = '.';
+    	    		Print_LCD(15,1, (int8_t *) aux_Dato);			// Pongo el dato en el display
+    	    	    Canal = 8;										// Cargo el proximo canal a leer
+    	    	    Leo_AD(Canal);									// Leo el canal
+    	    		}
+    	    	break;
+    		}
+		if(HAL_GPIO_ReadPin(VM12_GPIO_Port,VM12_Pin) == 0)	// Verifico si tengo tensión de sensores
+			Print_LCD(15,2, (int8_t *) " OK");				// Tengo tensión
+		else
+	    	Print_LCD(15,2, (int8_t *) " 0V");				// No Hay tensión
+
+		Pongo_Hora(false,0);
+		Caracter[0] = Teclado();									// Reviso el teclado
+		if(Caracter[0] == Esca)
+			break;													// Retorno
+
+		if(Caracter[0] == Enter)
+			{
+			Tension_AD1();											// Veo las tensiones de AD1
+			break;
+			}
+    	}
+
+	}
+
+/**
+ *   Rutina          	:  void Tension_AD1(void)
+ *   Entrada         	:  None
+ *   Parametros      	:  None
+ *   Returns         	:  None
+ *   Preconditions   	:  None
+ *   Descripcion     	:  Ver las tensiones de los canales 12 y 13 del A/D del micro
+ *   					PC2 = canal 12  --> V +5VA
+ *   					PC3 = canal 13  --> V -5VA
+ *   					En la rutina "Leo_AD" al valor del canal se le suma 10 para poder leer
+ *   					correctamente, se usa la variable "canal" desde 0 para poder guardar
+ *   					los datos en el array de los totalizadores y calcular los valores de
+ *   					tensión
+*/
+void Tension_AD1(void)
+	{
+	int8_t	Caracter[2];
+	int8_t x = 0;
+	int8_t Canal;
+	int8_t aux_Dato[4];
+	int16_t Vbat;
+
+	Presentacion_VAD();
+    Canal = 2;														// Leo el canal Vbat = 8 internamente canal 18
+	Leo_AD(Canal);
+    while(x != 1)
+    	{
+    	switch (Canal)
+    		{
+    		case 2:
+    	    	if(Flag_Medicion == true)
+    	    		{
+    	    		Vbat = (PromAD[Canal] * Coef_PC2_Def) / 4095;	// Calculo la tensión
+    	    		mi_ltoa(Vbat, & aux_Dato[0], 4, true);			// Convierto a ASCII
+   	    			aux_Dato[0] = aux_Dato[1];						// Pongo el punto decimal
+    				aux_Dato[1] = '.';
+    	    		Print_LCD(6,2, (int8_t *) aux_Dato);			// Pongo el dato en el display
+    	    	    Canal = 5;										// Cargo el proximo canal a leer
+    	    	    Leo_AD(Canal);									// Leo el canal
+    	    		}
+    	    	break;
+    		case 5:
+    	    	if(Flag_Medicion == true)
+    	    		{
+    	    		Vbat = (PromAD[Canal] * Coef_PC5_Def) / 4095;	// Calculo la tensión
+    	    		mi_ltoa(Vbat, & aux_Dato[0], 4, true);			// Convierto a ASCII
+   	    			aux_Dato[0] = aux_Dato[1];						// Pongo el punto decimal
+    				aux_Dato[1] = '.';
+    	    		Print_LCD(6,1, (int8_t *) aux_Dato);			// Pongo el dato en el display
+    	    	    Canal = 2;										// Cargo el proximo canal a leer
+    	    	    Leo_AD(Canal);									// Leo el canal
+    	    		}
+    	    	break;
+     		}
+		Pongo_Hora(false,0);
+		Caracter[0] = Teclado();									// Reviso el teclado
+		if(Caracter[0] == Esca)
+			break;													// Retorno
+    	}
+
+	}
+
+/**
+ *   Rutina          	:  void Mido_Vbat(void)
+ *   Entrada         	:  None
+ *   Descripcion     	:  Mide la tensión de bateria, Canal 18
+ *   					En la rutina "Leo_AD" al valor del canal se le suma 10 para poder leer
+ *   					correctamente, se usa la variable "canal" desde 0 para poder guardar
+ *   					los datos en el array de los totalizadores y calcular los valores de
+ *   					tensión
+*/
+void   Mido_Vbat(void)
+	{
+	int8_t x = 0;
+	int16_t Vbat;
+
+	Leo_AD(8);											// Leo el canal 8
+	Print_LCD(10,2,(int8_t *) " Mido Vbat");
+    while(x != 1)
+    	{
+    	if(Flag_Medicion == true)
+    		{
+    		Vbat = (PromAD[8] * Coef_Vbat_Def) / 4095;	// Calculo la tensión
+    		if(Vbat < 200)
+    			Flag_Error = Flag_Error + 1;
+    		x = 1;
+    		}
+		}
+	Time_Out_G = 1000;											/* pongo el Time Out en 1 seg. */
+	while(Time_Out_G > 0);										/* Espero para ver */
+
+	}
+
+/**
+ *   Rutina          	:  void Mido_33V(void)
+ *   Entrada         	:  None
+ *   Descripcion     	:  Mide la tensión de la CPU 3,30V, Canal 14
+ *   					En la rutina "Leo_AD" al valor del canal se le suma 10 para poder leer
+ *   					correctamente, se usa la variable "canal" desde 0 para poder guardar
+ *   					los datos en el array de los totalizadores y calcular los valores de
+ *   					tensión
+*/
+void   Mido_33V(void)
+	{
+	int8_t x = 0;
+	int16_t Vbat;
+
+	Leo_AD(4);									// Leo el canal 4   PC4
+	Print_LCD(10,2,(int8_t *) "Mido V CPU");
+   while(x != 1)
+    	{
+    	if(Flag_Medicion == true)
+    		{
+    		Vbat = (PromAD[4] * Coef_PC4_Def) / 4095;	// Calculo la tensión
+    		if(Vbat < 300)
+    			Flag_Error = Flag_Error + 2;
+    		x = 1;
+    		}
+		}
+	Time_Out_G = 1000;											/* pongo el Time Out en 1 seg. */
+	while(Time_Out_G > 0);										/* Espero para ver */
+	}
+
+/**
+ *   Rutina          	:  void Mido_5V(void)
+ *   Entrada         	:  None
+ *   Descripcion     	:  Mide la tensión de la CPU 5,00V, Canal 13
+ *   					En la rutina "Leo_AD" al valor del canal se le suma 10 para poder leer
+ *   					correctamente, se usa la variable "canal" desde 0 para poder guardar
+ *   					los datos en el array de los totalizadores y calcular los valores de
+ *   					tensión
+*/
+void   Mido_5VD(void)
+	{
+	int8_t x = 0;
+	int16_t Vbat;
+
+	Leo_AD(3);									// Leo el canal 3   PC3
+	Print_LCD(10,2,(int8_t *) "Mido V 5VD");
+    while(x != 1)
+    	{
+    	if(Flag_Medicion == true)
+    		{
+    		Vbat = (PromAD[3] * Coef_PC3_Def) / 4095;	// Calculo la tensión
+    		if(Vbat < 470)
+    			Flag_Error = Flag_Error + 3;
+    		x = 1;
+    		}
+		}
+	Time_Out_G = 1000;											/* pongo el Time Out en 1 seg. */
+	while(Time_Out_G > 0);										/* Espero para ver */
+	}
+
+
+/**
+ *   Rutina          	:  void Mido_5VA(void)
+ *   Entrada         	:  None
+ *   Descripcion     	:  Mide la tensión de la parte analógica 5,00V, Canal 15
+ *   					En la rutina "Leo_AD" al valor del canal se le suma 10 para poder leer
+ *   					correctamente, se usa la variable "canal" desde 0 para poder guardar
+ *   					los datos en el array de los totalizadores y calcular los valores de
+ *   					tensión
+*/
+void   Mido_5VA(void)
+	{
+	int8_t x = 0;
+	int16_t Vbat;
+
+	Leo_AD(5);									// Leo el canal 5
+	Print_LCD(10,2,(int8_t *) "Mido V 5VA");
+    while(x != 1)
+    	{
+    	if(Flag_Medicion == true)
+    		{
+    		Vbat = (PromAD[5] * Coef_PC5_Def) / 4095;	// Calculo la tensión   PC5
+    		if(Vbat < 470)
+    			Flag_Error = Flag_Error + 4;
+    		x = 1;
+    		}
+		}
+	Time_Out_G = 1000;											/* pongo el Time Out en 1 seg. */
+	while(Time_Out_G > 0);										/* Espero para ver */
+	}
+
+/**
+ *   Rutina          	:  void Mido_5NVA(void)
+ *   Entrada         	:  None
+ *   Descripcion     	:  Mide la tensión de la parte analógica -5,00V, Canal 12
+ *   					En la rutina "Leo_AD" al valor del canal se le suma 10 para poder leer
+ *   					correctamente, se usa la variable "canal" desde 0 para poder guardar
+ *   					los datos en el array de los totalizadores y calcular los valores de
+ *   					tensión
+*/
+void   Mido_5NVA(void)
+	{
+	int8_t x = 0;
+	int16_t Vbat;
+
+	Leo_AD(2);									// Leo el canal 2
+	Print_LCD(10,2,(int8_t *) "Mido V -5V");
+    while(x != 1)
+    	{
+    	if(Flag_Medicion == true)
+    		{
+    		Vbat = (PromAD[2] * Coef_PC2_Def) / 4095;	// Calculo la tensión   PC2
+    		if((Vbat < 470) || (Vbat > 515))
+    			Flag_Error = Flag_Error + 5;
+    		x = 1;
+    		}
+		}
+	Time_Out_G = 1000;											/* pongo el Time Out en 1 seg. */
+	while(Time_Out_G > 0);										/* Espero para ver */
+	}
+
+
+/**
+ *   Rutina         :  void Carga_Reloj(void)
+ *   Entrada        :  None
+ *   Parametros     :  None
+ *   Returns        :  None
+ *   Preconditions  :  None
+ *   Descripcion    :
+*/
+void   Carga_Reloj(void)
+	{
+	int8_t	Caracter[2];
+	int8_t  Posicion;
+	int8_t  Renglon;
+	int8_t  aux_Dato[2];
+	int8_t  aux_Posicion;
+
+	Posicion = 6;
+	aux_Posicion = Posicion;
+	Renglon = 1;
+	aux_Dato[0] = 0;
+	aux_Dato[1] = Null;
+
+	Caracter[0] = 0;
+	Caracter[1] = Null;
+
+	Presentacion_Reloj();
+
+	Print_LCD(Posicion,1, (int8_t *) str_date(false));
+	Print_LCD(Posicion,2, (int8_t *) str_time(false));
+
+	aux_Dato[0] = (sDate.WeekDay) + 0x30;				//	RTC_WEEKDAY_TUESDAY;
+	Print_LCD(19, 2, (int8_t *) aux_Dato);
+
+	cmd_ini(Disp_Blink_Cur_on);							// ,Blink Cursor ON
+	Time_Out_disp = 5;									// demora > 5 ms
+	while(status_display());							// Espera a que este disponible  demora > 5 ms
+
+	aux_Dato[0] = 0;
+	Print_LCD(Posicion, Renglon, (int8_t *) aux_Dato);	// Pongo el cursor en el lugar
+
+	while(Caracter[0] != Enter)
+		{
+		Caracter[0] = Teclado();						// Reviso el teclado
+		switch(Caracter[0])
+			{
+			case 1:
+			case 2:
+			case 3:
+			case 4:
+			case 5:
+			case 6:
+			case 7:
+			case 8:
+			case 9:
+			case 0:
+				aux_Dato[0] = Caracter[0] + '0';		// Cargo el numero en un auxiliar
+				if(Renglon == 1)
+					{
+					buf_date[Posicion - aux_Posicion] = aux_Dato[0];	// Pongo el caracter leido en la posición del string del dato
+					Print_LCD(Posicion, Renglon, (int8_t *) aux_Dato);	// Pongo el valor cargado y el cursor en el lugar
+					Posicion++;							// Incremento el puntero
+					switch(Posicion)					// Si llegue a la posició del punto lo salteo
+						{
+						case 8:
+						case 11:
+							Posicion++;					// Incremento el puntero para saltear el punto
+							break;
+						case 16:
+							Posicion = aux_Posicion;	// Inicializo el puntero
+							Renglon = 2;				// Paso al otro renglón
+							break;
+						}
+					}
+				else
+					{
+					if(Posicion == 19)
+						Day = aux_Dato[0];				// Si leo el día de la semana lo guardo en "Day"
+					else
+						buf_time[Posicion - aux_Posicion] = aux_Dato[0];// Pongo el caracter leido en la posición del string del dato
+
+					Print_LCD(Posicion, Renglon, (int8_t *) aux_Dato);	// Pongo el valor cargado y el cursor en el lugar
+					Posicion++;							// Incremento el puntero
+					switch(Posicion)					// Si llegue a la posició del punto lo salteo
+						{
+						case 8:
+						case 11:
+							Posicion++;					// Incremento el puntero para saltear el punto
+							break;
+						case 14:
+							Posicion = 19;
+							break;
+						case 20:
+							Posicion = aux_Posicion;	// Inicializo el puntero
+							Renglon = 1;				// Paso al otro renglón
+							break;
+						}
+					}
+				aux_Dato[0] = 0;						// Cargo el dato Nulo
+				Print_LCD(Posicion, Renglon, (int8_t *) aux_Dato);	// Pongo el cursor en el lugar
+				break;
+
+			case F2:
+				Posicion++;								// Incremento el puntero
+				if(Renglon == 1)
+					{
+					switch(Posicion)					// Si llegue a la posició del punto lo salteo
+						{
+						case 8:
+						case 11:
+							Posicion++;					// Incremento el puntero para saltear el punto
+							break;
+						case 16:
+							Posicion = aux_Posicion;	// Inicializo el puntero
+							Renglon = 2;				// Paso al otro renglón
+							break;
+						}
+					}
+				else
+					{
+					switch(Posicion)					// Si llegue a la posició del punto lo salteo
+						{
+						case 8:
+						case 11:
+							Posicion++;					// Incremento el puntero para saltear el punto
+							break;
+						case 14:
+							Posicion = 19;
+							break;
+						case 20:
+							Posicion = aux_Posicion;	// Inicializo el puntero
+							Renglon = 1;				// Paso al otro renglón
+							break;
+						}
+					}
+				aux_Dato[0] = 0;						// Cargo el dato Nulo
+				Print_LCD(Posicion, Renglon, (int8_t *) aux_Dato);	// Pongo el cursor en el lugar
+				break;
+
+			case F1:
+				Posicion--;								// Decremento el puntero
+				if(Renglon == 1)
+					{
+					switch(Posicion)					// Si llegue a la posició del punto lo salteo
+						{
+						case 5:
+							Posicion = 19;				// Inicializo el puntero
+							Renglon = 2;				// Paso al otro renglón
+							break;
+						case 8:
+						case 11:
+							Posicion--;					// Incremento el puntero para saltear el punto
+							break;
+						}
+					}
+				else
+					{
+					switch(Posicion)					// Si llegue a la posició del punto lo salteo
+						{
+						case 5:
+							Posicion = 15;				// Inicializo el puntero
+							Renglon = 1;				// Paso al otro renglón
+							break;
+						case 8:
+						case 11:
+							Posicion--;					// Incremento el puntero para saltear el punto
+							break;
+						case 18:
+							Posicion = 13;
+							break;
+						}
+					}
+				aux_Dato[0] = 0;						// Cargo el dato Nulo
+				Print_LCD(Posicion, Renglon, (int8_t *) aux_Dato);	// Pongo el cursor en el lugar
+				break;
+
+			case Enter:
+				(int8_t *) str_time(true);
+				(int8_t *) str_date(true);
+				Print_LCD(6,1, (int8_t *) str_date(false));
+				Print_LCD(6,2, (int8_t *) str_time(false));
+				Print_LCD(Posicion, Renglon, (int8_t *) aux_Dato);	// Repongo el cursor en el lugar
+				break;
+			}
+		}
+	cmd_ini(Clear);      								// Clear display y retorne el cursor a su posicion
+	Time_Out_disp = 5;									// demora > 5 ms
+	while(status_display());							// Espera a que este disponible  demora > 5 ms
+
+	cmd_ini(Home);      								// Lleva el cursor al primer caracter y deja el AC en cero
+	Time_Out_disp = 5;									// demora > 5 ms
+	while(status_display());							// Espera a que este disponible  demora > 5 ms
+
+	cmd_ini(Disp_on);									// Display ON,Cursor OFF,Blink Cursor OFF
+	Time_Out_disp = 5;									// demora > 5 ms
+	while(status_display());							// Espera a que este disponible  demora > 5 ms
+
+	}
+
+/**
+ *   Rutina          	:  void Reviso_Sincro(void)
+ *   Entrada         	:  None
+ *   Parametros     	:  None
+ *   Returns         	:  None
+ *   Preconditions   	:  None
+ *   Descripcion     	:
+*/
+void Reviso_Sincro(void)
+	{
+	int8_t	Caracter[2];
+	int8_t  aux_Dato[6];
+
+	Presentacion_Sincro();
+	Flag_Maq_Fun = false;								// Máquina parada
+	Velocidad_medida = 0;								// Velocidad de máquina
+	Flag_Maq_Enable = false;							// Disable la máquina
+	Flag_SecuEje1 = false;								// Borro el Flag secuencia del eje 1
+	Flag_SecuenEje = false;								// Borro el Flag secuencia de ejes
+	Flag_Secuencia = false;								// Borro el Flag secuencia de los pulsos de sincronismo
+//	Conta_Sincro = 0;									// Pongo a cero el contador de los pulsos de sincronismo
+	Cant_Ejes_Med = 0;
+//	Conta_Ejes = 0;
+	Cant_Pulsos_Med = 0;
+
+	while(Caracter[0] != Esca)							// Tecla TL en ASCII
+		{
+		Pongo_Hora(false,0);
+		if(Time_Maquina == 0)							// Si pasaron 2 seg. supongo que la máquina esta parada
+			{
+			Flag_Maq_Fun = false;						// Máquina parada
+			Velocidad_medida = 0;						// Velocidad de máquina
+			Flag_Maq_Enable = false;					// Disable la máquina
+			Flag_SecuEje1 = false;						// Borro el Flag secuencia del eje 1
+			Flag_SecuenEje = false;						// Borro el Flag secuencia de ejes
+			Flag_Secuencia = false;						// Borro el Flag secuencia de los pulsos de sincronismo
+//			Conta_Sincro = 0;							// Pongo a cero el contador de los pulsos de sincronismo
+//			Conta_Ejes = 0;
+			Cant_Ejes_Med = 0;
+			Cant_Pulsos_Med = 0;
+			Conta_Velo_Maq = 0;
+			}
+
+		if(Flag_Maq_Fun == false)
+			{
+			aux_Dato[0] = 'S';
+			aux_Dato[1] = 't';
+			aux_Dato[2] = 'o';
+			aux_Dato[3] = 'p';
+			}
+		else
+			{
+			aux_Dato[0] = 'R';
+			aux_Dato[1] = 'u';
+			aux_Dato[2] = 'n';
+			aux_Dato[3] = ' ';
+			}
+		aux_Dato[4] = Null;
+		Print_LCD(5, 1, (int8_t *) aux_Dato);			// Pongo si la máquina esta en marcha
+
+        if(Conta_Velo_Maq != 0)
+			Velocidad_medida = (uint32_t)(100000 / Conta_Velo_Maq);		// Frecuencia = 100000 / Contador (en mseg.) para tener 2 decimales
+
+        if(Velocidad_medida > 0)
+        	{
+        	mi_itoa(Velocidad_medida,(int8_t *)& aux_Dato,4, true);
+        	aux_Dato[3] = aux_Dato[2];
+        	aux_Dato[2] = '.';
+        	}
+        else
+        	{
+        	aux_Dato[0] = ' ';
+        	aux_Dato[1] = '0';
+        	aux_Dato[2] = '.';
+        	aux_Dato[3] = '0';
+        	}
+        aux_Dato[4] = Null;
+		Print_LCD(16, 1, (int8_t *) aux_Dato);			// Pongo la velocidad de la máquina
+
+		mi_itoa(Cant_Ejes_Med,(int8_t *)& aux_Dato,3, true);
+		aux_Dato[4] = Null;
+		Print_LCD(7, 2, (int8_t *) aux_Dato);			// Pongo el total de la cantidad de ejes
+
+		mi_itoa(Conta_Ejes,(int8_t *)& aux_Dato,3, true);
+		aux_Dato[4] = Null;
+		Print_LCD(17, 2, (int8_t *) aux_Dato);			// Pongo la cantidad de ejes
+
+
+		Caracter[0] = Teclado();						// Reviso el teclado
+
+		if(Caracter[0] != FREE)
+			{
+			switch (Caracter[0])
+				{
+				case Enter:
+					Reviso_Sincro1();
+					Presentacion_Sincro();
+					break;
+				default:
+					break;
+
+				}
+			}
+		}
+
+	}
+
+/**
+ *   Rutina          		:  void Reviso_Sincro(void)
+ *   Entrada         		:  None
+ *   Parametros      	:  None
+ *   Returns        		:  None
+ *   Preconditions   :  None
+ *   Descripcion     	:
+*/
+void Reviso_Sincro1(void)
+	{
+	int8_t	Caracter[2];
+	int8_t  aux_Dato[6];
+
+	Presentacion_Sincro1();
+	while(Caracter[0] != Esca)								// Tecla TL en ASCII
+		{
+		Pongo_Hora(false,0);
+		Caracter[0] = Teclado();							// Reviso el teclado
+		if(Time_Maquina == 0)								// Si pasaron 2 seg. supongo que la máquina esta parada
+			{
+			Flag_Maq_Fun = false;							// Máquina parada
+			Velocidad_medida = 0;							// Velocidad de máquina
+			Flag_Maq_Enable = false;						// Disable la máquina
+			Flag_SecuEje1 = false;							// Borro el Flag secuencia del eje 1
+			Flag_SecuenEje = false;							// Borro el Flag secuencia de ejes
+			Flag_Secuencia = false;							// Borro el Flag secuencia de los pulsos de sincronismo
+//			Conta_Sincro = 0;								// Pongo a cero el contador de los pulsos de sincronismo
+//			Conta_Ejes = 0;
+			Cant_Ejes_Med = 0;
+			Cant_Pulsos_Med = 0;
+			}
+
+		if(Flag_SecuEje1 == true && Flag_SecuenEje == true && Flag_Secuencia == true)
+			{
+			aux_Dato[0] = ' ';
+			aux_Dato[1] = 'O';
+			aux_Dato[2] = 'k';
+			aux_Dato[3] = ' ';
+			}
+		else
+			{
+			aux_Dato[0] = 'M';
+			aux_Dato[1] = 'a';
+			aux_Dato[2] = 'l';
+			aux_Dato[3] = ' ';
+			}
+		aux_Dato[4] = Null;
+		Print_LCD(5, 1, (int8_t *) aux_Dato);				// Pongo si la secuencia de pulsos esta bien
+
+		mi_itoa(Cant_Pulsos_Med,(int8_t *)& aux_Dato,3, true);
+		aux_Dato[4] = Null;
+		Print_LCD(17, 1, (int8_t *) aux_Dato);				// Pongo la cantidad de pulsos del encoder medida
+
+		mi_itoa(Conta_Sincro,(int8_t *)& aux_Dato,3, true);	// Conta_Velo		Conta_Sincro
+		aux_Dato[4] = Null;
+		Print_LCD(13, 2, (int8_t *) aux_Dato);				// Pongo el valor del contador de sincronismo
+		}
+
+	}
+
+/**
+ *   Rutina          	:  void Leer_AD8(void)
+ *   Entrada         	:  None
+ *   Descripcion     	:  Muestra las cuentas leidas de cada canal por  el A/D
+ *   					   de 8 canales, sin hacer ningún ajuste
+ *   					   Del canal 1-2-3-4
+*/
+void   Leer_AD8(void)
+	{
+	int8_t	Caracter[2];
+	int8_t  aux_Dato[6];
+	int8_t  i;
+//	int8_t	LCD_actualiza=0;
+
+	Presentacion_AD0();
+	Print_LCD(12, 3, (int8_t *) "        ");				// Borro
+	while(Caracter[0] != Esca)
+		{
+		Pongo_Hora(false,0);
+		Caracter[0] = Teclado();								// Reviso el teclado
+		switch(Caracter[0])
+			{
+			case Enter:
+				Leer_AD8_1();									// Voy a ver los canales 5-6-7-8
+				Caracter[0] = null;								// borro la lectura del teclado
+				Presentacion_AD0();
+				break;
+			}
+        Calculo_Velocidad();									// Calculo de la velocidad de la maquina
+   		if(Conta_Velo_Maq != 0)									// Maquina funcionando
+   			{
+            Medicion();											// Hago la medición según la velocidad de máquina
+   			}
+   		else													// Máquina parada
+   			{
+   			Init_Medicion();									// Inicializa la suma acumulativa de valores medidos y el contador de cantidad de mediciones
+   			Time_Medicion = 50;									// pongo el Time Out en 50 mseg.
+   			while(Time_Medicion >= 1);							// Se queda en este lugar haciendo las mediciones durante ese tiempo
+   			Flag_Enable_AD = false;								// Se inicializa el flag indicador de un nuevo ciclo de medicion del peso
+
+   			while((Flag_Conv_FIN == false) && (Time_Medicion >= 1));// Espera a que termine la última conversión
+   			}
+
+   		for(i = 0; i < 8; i++)									// Calcula el promedio de los canales en forma sucesiva
+			{
+			Peso_Bruto_CH[i] = Suma_Canal_AD[i] / Cantidad_Mediciones;	// Es un promedio simple de cada canal
+			Peso_Bruto_CH[i] = Peso_Bruto_CH[i] >> 1;			// Vengo con el dato en 15 bits y lo dejo en 14 Bits (16384 cuentas)
+			}
+
+		mi_itoa(Cantidad_Mediciones,(int8_t *)& aux_Dato,5, false);// Pongo el valor de Cantidad_Mediciones
+		aux_Dato[6] = Null;
+ 		Print_LCD(12, 3, (int8_t *) "        ");				// Borro
+		Print_LCD(13, 3, (int8_t *) aux_Dato);					// Pongo el valor de la Cantidad_Mediciones
+
+  		mi_itoa(Peso_Bruto_CH[0],(int8_t *)& aux_Dato,5, false);// Dato Canal 1
+  		aux_Dato[6] = Null;
+  		Print_LCD(4, 1, (int8_t *) aux_Dato);					// Pongo el valor del A/D
+
+   		mi_itoa(Peso_Bruto_CH[1],(int8_t *)& aux_Dato,5, false);// Dato Canal 2
+   		aux_Dato[6] = Null;
+   		Print_LCD(15, 1, (int8_t *) aux_Dato);					// Pongo el valor del A/D
+
+   		mi_itoa(Peso_Bruto_CH[2],(int8_t *)& aux_Dato,5, false);// Dato Canal 3
+   		aux_Dato[6] = Null;
+   		Print_LCD(4, 2, (int8_t *) aux_Dato);					// Pongo el valor del A/D
+
+   		mi_itoa(Peso_Bruto_CH[3],(int8_t *)& aux_Dato,5, false);// Dato Canal 4
+   		aux_Dato[6] = Null;
+   		Print_LCD(15, 2, (int8_t *) aux_Dato);					// Pongo el valor del A/D
+
+
+/*
+   		switch(LCD_actualiza)
+   			{
+   			case 0:
+   				mi_itoa(Cantidad_Mediciones,(int8_t *)& aux_Dato,5, false);// Dato Cantidad de Mediciones
+   				aux_Dato[6] = Null;
+   				Print_LCD(12, 3, (int8_t *) "        ");				// Borro
+   				Print_LCD(13, 3, (int8_t *) aux_Dato);					// Pongo el valor de Cantidad_Mediciones
+   				break;
+
+   			case 1:
+   				if(Peso_Bruto_CH[0] >=16384)							// Si el Peso Bruto es negativo, el valor supera 0x7FFF
+   					{													// Entonces pongo "-----" en display indicando que el peso  es negativo
+   					Print_LCD(4, 1, (int8_t *) "-----");				//
+   					}
+   				else
+   					{
+   					mi_itoa(Peso_Bruto_CH[0],(int8_t *)& aux_Dato,5, false);// Dato Canal 1
+   					aux_Dato[6] = Null;
+   					Print_LCD(4, 1, (int8_t *) aux_Dato);					// Pongo el valor del A/D
+   					}
+   				break;
+
+   			case 2:
+   				if(Peso_Bruto_CH[1] >=16384)							// Si el Peso Bruto es negativo, el valor supera 0x7FFF
+   					{													// Entonces pongo "-----" en display indicando que el peso  es negativo
+   					Print_LCD(4, 1, (int8_t *) "-----");					// Pongo el valor del A/D
+   					}
+   				else
+   					{
+   					mi_itoa(Peso_Bruto_CH[1],(int8_t *)& aux_Dato,5, false);// Dato Canal 2
+   					aux_Dato[6] = Null;
+   					Print_LCD(15, 1, (int8_t *) aux_Dato);					// Pongo el valor del A/D
+   					}
+   			break;
+
+   			case 3:
+   				if(Peso_Bruto_CH[2] >=16384)							// Si el Peso Bruto es negativo, el valor supera 0x7FFF
+   					{													// Entonces pongo "-----" en display indicando que el peso  es negativo
+   					Print_LCD(4, 1, (int8_t *) "-----");					// Pongo el valor del A/D
+   					}
+   				else
+   					{
+   					mi_itoa(Peso_Bruto_CH[2],(int8_t *)& aux_Dato,5, false);// Dato Canal 3
+   					aux_Dato[6] = Null;
+   					Print_LCD(4, 2, (int8_t *) aux_Dato);					// Pongo el valor del A/D
+   					}
+   			break;
+
+   			case 4:
+   				if(Peso_Bruto_CH[3] >=16384)							// Si el Peso Bruto es negativo, el valor supera 0x7FFF
+   					{													// Entonces pongo "-----" en display indicando que el peso  es negativo
+   					Print_LCD(4, 1, (int8_t *) "-----");					// Pongo el valor del A/D
+   					}
+   				else
+   					{
+   					mi_itoa(Peso_Bruto_CH[3],(int8_t *)& aux_Dato,5, false);// Dato Canal 4
+   					aux_Dato[6] = Null;
+   					Print_LCD(15, 2, (int8_t *) aux_Dato);					// Pongo el valor del A/D
+   					}
+   			break;
+   			}
+   			LCD_actualiza++;
+   			if(LCD_actualiza >= 5)
+   				LCD_actualiza=0;
+*/
+		}
+	}
+
+/**
+ *   Rutina          	:  void Leer_AD8_1(void)
+ *   Entrada         	:  None
+ *   Descripcion     	:  Muestra las cuentas leidas de cada canal por el A/D
+ *   					   de 8 canales, sin hacer ningún ajuste
+ *   					   Del canal 5-6-7-8
+*/
+void   Leer_AD8_1(void)
+	{
+	int8_t	Caracter[2];
+	int8_t  aux_Dato[6];
+	int8_t  i;
+
+	Presentacion_AD1();
+	while(Caracter[0] != Esca)
+		{
+		Pongo_Hora(false,0);
+		Caracter[0] = Teclado();								// Reviso el teclado
+		Init_Medicion();										// Inicializa la suma acumulativa de valores medidos y el contador de cantidad de mediciones
+		Time_Medicion = 50;										// pongo el Time Out en 50 mseg.
+		while(Time_Medicion > 0);								// Hace las mediciones durante ese tiempo
+		Flag_Enable_AD = false;									// Se inicializa el flag indicador de un nuevo ciclo de medicion del peso
+
+		while((Flag_Conv_FIN == false) && (Time_Medicion >= 1));// Espera a que termine la última conversión
+		for(i = 0; i < 8; i++)									// Calcula el promedio de los canales en forma sucesiva
+			{
+			Peso_Bruto_CH[i] = Suma_Canal_AD[i] / Cantidad_Mediciones;	// Es un promedio simple de cada canal
+			Peso_Bruto_CH[i] = Peso_Bruto_CH[i] >> 1;			// Vengo con el dato en 15 bits y lo dejo en 13 Bits (8192 cuentas)
+			}
+
+		mi_itoa(Cantidad_Mediciones,(int8_t *)& aux_Dato,5, false);// Pongo el valor de Cantidad_Mediciones
+		aux_Dato[6] = Null;
+		Print_LCD(12, 3, (int8_t *) "        ");				// Borro
+		Print_LCD(13, 3, (int8_t *) aux_Dato);					// Pongo el valor de la Cantidad_Mediciones
+
+		mi_itoa(Peso_Bruto_CH[4],(int8_t *)& aux_Dato,5, false);// Dato Canal 4
+		aux_Dato[6] = Null;
+		Print_LCD(4, 1, (int8_t *) aux_Dato);					// Pongo el valor del A/D
+
+		mi_itoa(Peso_Bruto_CH[5],(int8_t *)& aux_Dato,5, false);// Dato Canal 5
+		aux_Dato[6] = Null;
+		Print_LCD(15, 1, (int8_t *) aux_Dato);					// Pongo el valor del A/D
+
+		mi_itoa(Peso_Bruto_CH[6],(int8_t *)& aux_Dato,5, false);// Dato Canal 6
+		aux_Dato[6] = Null;
+		Print_LCD(4, 2, (int8_t *) aux_Dato);					// Pongo el valor del A/D
+
+		mi_itoa(Peso_Bruto_CH[7],(int8_t *)& aux_Dato,5, false);// Dato Canal 7
+		aux_Dato[6] = Null;
+		Print_LCD(15, 2, (int8_t *) aux_Dato);					// Pongo el valor del A/D
+		}
+	}
+
+/**
+ *   Rutina          	:  void Calibrar_AD8()
+ *   Entrada         	:  None
+ *   Descripcion     	:  Se elige la celda a calibrar (1 al 8), se toma el cero
+ *   						luego se toma el peso y cuando se termina se muestran
+ *   						las cuentas del canal y el peso en gr.
+*/
+void Calibrar_AD8()
+	{
+	int8_t	Caracter[2];
+	int8_t  aux_Dato[6];
+	int8_t  Celda = 0;		// El valor va de 0 a 7
+	int8_t  Pasos = 0;		// Pasos de calibración --> 0 = cero, 1 = Peso
+	int8_t	resultado;		// Resultado de la medición
+
+	Presentacion_Calibracion_AD();
+	while(Caracter[0] != Esca)
+		{
+		Pongo_Hora(false,0);
+		Caracter[0] = Teclado();								// Reviso el teclado
+		switch(Caracter[0])
+			{
+			case 1:
+			case 2:
+			case 3:
+			case 4:
+			case 5:
+			case 6:
+			case 7:
+			case 8:
+				Celda = Caracter[0];							// cargo el dato de la celda a calibrar
+				mi_itoa(Celda,(int8_t *)& aux_Dato,1, true);	// Nº de Celda
+				Print_LCD(11, 1, (int8_t *) aux_Dato);			// Pongo el valor del A/D
+				Celda = Celda  - 1;
+				break;
+			case Enter:
+				Print_LCD(3, 2, (int8_t *) "     ");			// Borro cuentas
+				Print_LCD(14, 2, (int8_t *) "    ");			// borro peso
+				switch (Pasos)
+					{
+					case 0:
+						Print_LCD(10,3,(int8_t *) "Ejecutando");
+						resultado = Primer_Cero(Celda);			// Hago el cero
+						Time_Out_G = 2000;						// pongo el Time Out en 2000 mseg.
+						while(Time_Out_G > 0);					// Hace las mediciones durante ese tiempo
+						if(resultado == False)
+							{
+							Print_LCD(0,3,(int8_t *) "(Esc)SALIR (Ent)Cero");
+							}
+						else
+							{
+							Print_LCD(0,3,(int8_t *) "(Esc)SALIR (Ent)Peso");
+							Pasos++;
+							}
+						break;
+					case 1:
+						Print_LCD(10,3,(int8_t *) "Ejecutando");
+						resultado = Tomar_Peso(Celda);			// Tomo el peso y calculo del coeficiente
+						Time_Out_G = 2000;						// pongo el Time Out en 2000 mseg.
+						while(Time_Out_G > 0);					// Hace las mediciones durante ese tiempo
+						if(resultado != true)
+							{
+							Pasos = 0;
+							Print_LCD(0,3,(int8_t *) "(Esc)SALIR (Ent)Cero");
+							}
+						else
+							{
+							Print_LCD(0,3,(int8_t *) "(Esc)SALIR (Ent)Save");
+							Pasos++;
+							}
+						break;
+					case 2:
+						//Guardo();								// Si todo bien guardo el coeficiente
+						Print_LCD(10,3,(int8_t *) "Guardando ");
+						Pasos = 0;
+						Time_Out_G = 2000;						// pongo el Time Out en 2000 mseg.
+						while(Time_Out_G > 0);					// Muestra la leyenda durante ese tiempo
+						Print_LCD(0,3,(int8_t *) "Esc SALIR  Cero(Ent)");
+						Pasos = 0;
+						break;
+					}
+				break;
+			}
+
+		Init_Medicion();										// Inicializa la suma acumulativa de valores medidos y el contador de cantidad de mediciones
+		Time_Medicion = 50;										// pongo el Time Out en 50 mseg.
+		while(Time_Medicion > 0);								// Hace las mediciones durante ese tiempo
+		Flag_Enable_AD = false;									// Se inicializa el flag indicador de un nuevo ciclo de medicion del peso
+
+		while((Flag_Conv_FIN == false) && (Time_Medicion >= 1));	// Espera a que termine la última conversión
+		Peso_Bruto_CH[Celda] = Suma_Canal_AD[Celda] / Cantidad_Mediciones;	// Es un promedio simple de cada canal
+		Peso_Bruto_CH[Celda] = Peso_Bruto_CH[Celda] >> 1;		// Vengo con el dato en 15 bits y lo dejo en 14 Bits (16384 cuentas)
+
+		mi_itoa(Peso_Bruto_CH[Celda],(int8_t *)& aux_Dato,5, true);// Peso Bruto Celda
+		aux_Dato[6] = Null;
+		Print_LCD(3, 2, (int8_t *) aux_Dato);					// Pongo el valor del A/D
+
+		Peso_Neto_CH[Celda] = (Peso_Bruto_CH[Celda] - Cero_CH[Celda]) / 800; // el 100 hay que reemplazarlo por el coeficiente
+		mi_itoa(Peso_Neto_CH[Celda],(int8_t *)& aux_Dato,4, true);// Dato Canal elejido
+		aux_Dato[6] = Null;
+		Print_LCD(14, 2, (int8_t *) aux_Dato);					// Pongo el valor del A/D
+		}
+	}
+
+/**
+ *   Rutina          	:  Tomar_Taras(void)
+ *   Entrada         	:  None
+ *   Descripcion     	:  Se realiza el proceso de toma de taras iniciado por teclado
+ *
+ *
+*/
+
+void Tomar_Taras(void)
+{
+	int8_t	Caracter[2];
+	//int8_t  aux_Dato[6];
+
+	Presentacion_Toma_Taras();
+	while(Caracter[0] != Esca)
+		{
+		if(Flag_Maq_Fun == false)								// Máquina parada
+			{
+			Print_LCD(0,1,(int8_t *) "Maquina Detenida    ");
+			Print_LCD(0,2,(int8_t *) "No puede tomar taras");
+			Caracter[0] = Esca;
+			Time_Out_G = 2000;									// pongo el Time Out en 2000 mseg.
+			while(Time_Out_G > 0);								// Muestra la leyenda durante ese tiempo
+			}
+
+		Pongo_Hora(false,0);
+		Caracter[0] = Teclado();								// Reviso el teclado
+		if(Caracter[0] == Esca)
+			{
+			Print_LCD(0,1,(int8_t *) "Medicion de taras   ");
+			Print_LCD(0,2,(int8_t *) "ABORTADO por comando");
+			Caracter[0] = Esca;
+			Time_Out_G = 2000;									// pongo el Time Out en 2000 mseg.
+			while(Time_Out_G > 0);								// Muestra la leyenda durante ese tiempo
+			Flag_Init_Tara = false;								// Pone el flag para deshabilitar la toma de taras de los platillos
+			}
+
+		if(Flag_SecuEje1 == true)								// DEBE esperar que pase el plato 1 para comenzar a tomar las taras
+			{
+			//Flag_SecuEje1 = false;							// Se Repone el indicador de eje 1 cuando pasa el tercer platillo en la interrupcion de plato
+			Print_LCD(0,2,(int8_t *) "Vel: x.x ejes/s     ");
+			Flag_Init_Tara = true;								// Pone el flag para habilitar la toma de taras de los platillos
+			}
+
+		if(Flag_Init_Tara == true)								// Pone el flag para habilitar la toma de taras de los platillos)
+			{
+			Calculo_Velocidad();									// Calculo de la velocidad de la maquina
+			Print_LCD(5, 2, (int8_t *) Dato_Velo);					// Pongo la velocidad de la máquina
+			if(Conta_Velo_Maq != 0)									// Maquina funcionando
+   				{
+				Toma_Tara_Platillos();								// Toma el peso del platillo y lo guarda como tara
+   				}
+
+			if(Cant_Ejes_Med > Config.n_platillos)					// La cantidad de platos va de 0 a n_platillos - 1
+   				{
+				Print_LCD(0,1,(int8_t *) "Fin proceso Taras..!");
+				Print_LCD(0,2,(int8_t *) "--------------------");
+				Caracter[0] = Esca;
+				Time_Out_G = 2000;									// pongo el Time Out en 2000 mseg.
+				while(Time_Out_G > 0);								// Muestra la leyenda durante ese tiempo
+				Flag_Init_Tara = false;								// Pone el flag para deshabilitar la toma de taras de los platillos
+   				}
+			}
+		}	// Mientras no entre por teclado "Esc" o llegue a revisar todos los platos, tiene que quedarse midiendo y almacenando los valores medidos
+}			// Si entro "Esc" por teclado DEBE abortar el proceso de toma de taras

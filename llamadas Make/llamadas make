@@ -1,0 +1,2 @@
+make -f STM32Make.make clean
+make -f STM32Make.make check

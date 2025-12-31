@@ -1,0 +1,299 @@
+/*          Declaraciones variables generales  Phenix 2022
+   	Fecha inicialización	:	28/06/2025
+	Fecha actualización 	:	28/08/2025
+	Realizado por	    	:	C.E. Colombo
+	Compilador utilizado	:	ST - Eclipse IDE
+	Proyecto	    		:	Phenix 2025 - 407VGT6
+	Archivo		    		: 	Variables.h
+	Versión	   	    		:	2.00.00
+	Objetivo	    		:	Definiciones generales de las variables
+*/
+
+
+#include "Definiciones.h"
+#include "Estructuras_Peri.h"
+#include "Estructuras.h"
+#include "Var_Ram.h"
+#include "Var_Flash.h"
+    /*------------------------------------------------------------------------
+			       Variables de Phenix 2022
+	------------------------------------------------------------------------*/
+/* Definiciones generales de las distintas variables Globales */
+#if PosVariables != 0		                /* Variables externas */
+     /*      Variables Públicas del Programa       */
+	extern  int16_t 	Time_Out_485;					/* Timer para retrasa la transmisión  485 */
+	extern  int32_t 	Time_Out_G;						/* Time out de uso general */
+	extern  int16_t 	Time_Out_disp;          		/* Time out del display */
+	extern  int32_t  	Time_Clock;         			/* Timer para poner la hora */
+	extern  int16_t 	Time_Buzzer;          			/* Timer del Buzzer */
+	extern  int16_t  	Time_Maquina;          			/* Timer de Máquina parada */
+	extern  int16_t  	Time_Out_Velo;					/* Time Out cálculo velocidad */
+	extern  int16_t		Time_Parpadeo;					/* Timer para el parpadeo del los leds */
+	extern  int16_t		Time_Medicion;					// Timer para medicion estatica
+
+	extern  int8_t		Flag_Boton;
+	extern  int8_t		Flag_Pruebas;
+	extern  int8_t		Flag_Error;
+	extern  int8_t		Time_Parpa;
+	extern  int8_t		Flag_Grabo;
+	extern  int8_t		Flag_Rec_PC;		 			/* flag  que permite inicializar el DMA PC */
+	extern  int8_t		Flag_Rec_PSal;		 			/* flag  que permite inicializar el DMA Sal */
+	extern  int8_t		Flag_Rec_ECP;		 			/* flag  que permite inicializar el DMA ECM */
+
+	extern  uint8_t		Cont_Velo;						// Calculo de la velocidad de la maquina
+	extern  uint8_t 	Dato_Velo[6];					// Valor de la velocidad en ASCII
+
+ 	/* Variables Públicas del RELOJ */
+ 	extern  int8_t 		buf_date[11];
+ 	extern  int8_t 		buf_time[9];					/* Datos de fecha y hora */
+	extern  int8_t 		Day;
+
+	/*------------------------------------------------------------------------
+ 					Variables de la comunicación
+ 	------------------------------------------------------------------------*/
+	extern  uint8_t 	Aux_buf_tx[Buffer_Tx];			// Auxiliar del buffer de transmision
+	extern  int8_t   	Aux_recepcion_R0[4];			// Auxiliar de recepción
+	extern  int8_t   	Aux_recepcion_R1[4];			// Auxiliar de recepción
+	extern  uint8_t 	RxBuffer_PC_DMA[Buffer_Rx];			// Recepción por DMA de la PC
+	extern  uint8_t 	RxBuffer_Sal[Buffer_Rx_Sal];	// Recepción por DMA de la placa de Salida
+	extern  uint8_t 	buf_rx_test[3][3];      		// buffer de recepción de error o test Gral. - USART 0/1/2
+	extern  int8_t   	Nodo_ok;						// flag para ver si el numero de nodo esta OK
+	extern  uint8_t 	NodoOrRe[3];					// Número del nodo origen de los datos recibidos
+	extern  int8_t  	Comando_recibido; 				// Comando recibido a procesar
+	extern  uint16_t  	Check_sum;						// Suma de los bytes recibidos
+	extern  uint8_t 	TxDato1[3];
+	extern  uint8_t 	TxDato5[3];
+	extern  uint8_t 	RxDato1;
+	extern  uint8_t 	RxDato5;
+	extern  uint8_t 	RxDato6;
+	extern  int16_t 	Conta;
+	extern  int16_t		Long_string;
+	extern  int16_t		Long_string_Sal;
+	extern  int8_t		Flag_Rx_DMA_PC;
+	extern  int8_t		Flag_Rx_DMA_Sal;
+	extern  int8_t		Flag_Rx_DMA_ECP;
+	extern  int8_t		RxDataLen_PC;					// Largo del string recibido PC
+	extern  int8_t		RxDataLen_Sal;					// Largo del string recibido Salida
+	extern  int8_t		RxDataLen_ECP;					// Largo del string recibido ECP
+	extern	uint8_t		Veo_Peso[81];					// Buffer para enviar peso y tamaño a la PC en modo Test y Trabajo
+
+	/*------------------------------------------------------------------------
+			       D R I V E R   D E   T E C L A D O
+	------------------------------------------------------------------------*/
+	extern  uint16_t	SalScan;
+	extern  int8_t   	Buffer_Teclado[MAXCOLA];
+	extern  int16_t  	Posible_Tecla;
+	extern  int8_t   	Posible_Columna;
+	extern  int8_t   	Flg_Posible;
+	extern  int8_t   	Flg_NoTecla;
+	extern  uint16_t  	Cnt_posible;
+	extern  uint16_t  	Cnt_NoTecla;
+	extern  int16_t   	Ptr_PongoTec;
+	extern  int16_t   	Ptr_ConsumoTec;
+	extern 	int8_t   	Cnt_Error;						// Inicializa el contador de error
+
+ 	/*------------------------------------------------------------------------
+		V A R I A B L E S    A / D    I N T E R N O   M I C R O   4 2 9
+	------------------------------------------------------------------------*/
+	extern  uint16_t 	Cont_AD;           				// contador para promedios de lectura del A/D de las tensiones del 429
+	extern  uint16_t	PromAD[9];            			// Valor leido del A/D promediado de las tensiones del 429
+	extern  uint32_t 	TotalAD[9];          			// Valor Totalizado del A/D para promediar de las tensiones del 429
+	extern  int8_t   	Flag_Medicion;					// Flag parar saber si termine de leer el AD de las tensiones del 429
+	extern  int16_t   	Channel_AD;						// Canal del AD
+	extern  int16_t		Dato_AD[30];					/* Buffer de intercambio con A/D Rx */
+
+	/*------------------------------------------------------------------------
+		V A R I A B L E S    G E N E R A L E S   D E   M A Q U I N A
+	------------------------------------------------------------------------*/
+	extern  int8_t   	Flg_ErrorFlash;					// Si el Flag == True --> hay Error al escribir la Flash
+	extern  int8_t   	Flg_Display;					// Si el Flag == True --> hay display LCD y teclado
+	extern  int8_t	 	Flag_Enable_AD;					// Flag para comenzar a Medir con el A/D principal
+	extern  int8_t 	 	Flag_Trabajo;					/* si = True modo trabajo  */
+	extern  int8_t   	Flag_Primer_ingreso;			/* si = True se ingreso por primera vez al programa  */
+	extern  int8_t 		Flag_MaqOk;						/* flag máquina en condiciones de pasar fruta */
+	extern  int8_t 		Flag_IndicesOk;					/* Flag para sort de cola de salidas */
+	extern  int8_t 		Flag_IndicesOk_E;				/* Flag para sort de cola de etiquetadoras */
+	extern  int8_t		Flag_Init_Tara;					// Flag para habilitar toma de taras
+	extern  int8_t		Flag_Enable_Taras;				// Flag para habilitar la toma de taras desde la PC
+
+    /*      Variables del modo Sort     */
+	extern  int16_t 	Puntero_Dato;					/* puntero al buffer de Trabajo */
+	extern  int16_t 	N_Transferencia;				/* Número de orden de transmisión */
+	extern  int16_t 	Peso_min;						/* Peso mínimo a comparar */
+	extern  int16_t 	Val_Salida[MaxLineas][Tot_Valvulas];	/* Salida asignada según el tamano */
+	extern  int16_t 	Valvula[Tot_Valvulas];			/* Valvulas activas */
+	extern  int16_t 	Indice[MaxLineas][Salidas];
+	extern  int8_t 		Flag_General[MaxLineas][Salidas];
+	extern  int16_t 	Bandeja[MaxLineas][Tot_Valvulas];/* Salida activa */
+	extern  int16_t 	Bandeja_Aux;					/* Salida Aux activa */
+	extern  int16_t 	Bandeja_Act[Salidas];			/* Salida a activar */
+	extern  int16_t 	Tot_Frut_Salidas[Salidas];		/* Total de frutas por salida */
+
+     /* para uso de la etiquetadora */
+	extern  int16_t 	Puntero_Dato_E;					/* puntero al buffer de Trabajo */
+	extern  int8_t 		Flag_General_E[MaxLineas][MaxEtiqueta];
+	extern  int16_t 	Tamano_E[MaxLineas][Max_Tamanos];/* Salida asignada según el tamano */
+	extern  int16_t 	Sal_Etiqueta[Tot_Sal_Etiq];		/* Salidas etiquetadoras */
+	extern  int16_t 	Indice_E[MaxLineas][MaxEtiqueta];
+
+    /* para uso de PRUEBAS */
+	extern  int16_t 	Error_Aux;					/* Errores de comunicación salidas */
+	extern  int8_t		Dato_Error[3];				/* Valor del Error de comunicación */
+	extern  int32_t 	Cant_Envios;				/* Cantidad de envíos de comunicación */
+
+    /*      DEFINICION DE LAS ESTRUCTURAS																        */
+   	extern struct Comunicacion_PC   	Comunica_PC;	// Estructura Comunicación PC
+   	extern struct Comunicacion_PSal 	Comunica_PSal;	// Estructura Comunicación Placas de salida
+   	extern struct Comunicacion_ECP  	Comunica_ECP;	// Estructura Comunicación ECP8266
+  	extern struct reg_Trabajo   		M_Trabajo;
+   	extern struct reg_Trabajo   		Aux_Trabajo;	/* estructura auxiliar para transmitir */
+
+   	/*------------------------------------------------------------------------
+					DEFINICION DE LAS TABLAS
+	------------------------------------------------------------------------*/
+	/*   Se definen como const para que la tabla quede en ROM  */
+	// Tabla del teclado
+	extern const uint8_t Mapeo[20];
+
+#else			/* Variables propias */
+
+/*      Variables Públicas del Programa       */
+	int16_t 	Time_Out_485;
+	int32_t 	Time_Out_G;						/* Time out de uso general */
+	int16_t 	Time_Out_disp;          		/* Time out del display */
+	int32_t 	Time_Clock;         			/* Timer para poner la hora */
+	int16_t 	Time_Buzzer;          			/* Timer del Buzzer */
+	int16_t  	Time_Maquina;          			/* Timer de Máquina parada */
+	int16_t  	Time_Out_Velo;					/* Time Out cálculo velocidad  */
+	int16_t		Time_Parpadeo;					/* Timer para el parpadeo del los leds */
+	int16_t		Time_Medicion;					// Timer para medicion estatica
+
+	int8_t		Flag_Boton;
+	int8_t		Flag_Pruebas;
+	int8_t		Flag_Error;
+	int8_t		Time_Parpa;
+	int8_t		Flag_Grabo;
+	int8_t		Flag_Rec_PC;		 			/* flag  que permite inicializar el DMA PC */
+	int8_t		Flag_Rec_PSal;		 			/* flag  que permite inicializar el DMA Sal */
+	int8_t		Flag_Rec_ECP;		 			/* flag  que permite inicializar el DMA ECM */
+
+	uint8_t		Cont_Velo;						// Calculo de la velocidad de la maquina
+	uint8_t 	Dato_Velo[6];					// Valor de la velocidad en ASCII
+
+	 	/* Variables Públicas del RELOJ */
+	int8_t 		buf_date[11];
+	int8_t 		buf_time[9];					/* Datos de fecha y hora */
+	int8_t 		Day;
+
+	/*------------------------------------------------------------------------
+ 					Variables de la comunicación
+ 	------------------------------------------------------------------------*/
+	uint8_t 	Aux_buf_tx[Buffer_Tx];			// Auxiliar del buffer de transmision
+	int8_t   	Aux_recepcion_R0[4];			// Auxiliar de recepción
+	int8_t   	Aux_recepcion_R1[4];			// Auxiliar de recepción
+	uint8_t 	RxBuffer_PC_DMA[Buffer_Rx];			// Recepción por DMA de la PC
+	uint8_t 	RxBuffer_Sal[Buffer_Rx_Sal];	// Recepción por DMA de la placa de Salida
+	uint8_t 	buf_rx_test[3][3];      		// buffer de recepción de error o test Gral. - USART 0/1/2
+	int8_t  	Nodo_ok;						// flag para ver si el numero de nodo esta OK
+	uint8_t 	NodoOrRe[3];					// Número del nodo origen de los datos recibidos
+	int8_t  	Comando_recibido; 				// Comando recibido a procesar
+	uint16_t 	Check_sum;						// Suma de los bytes recibidos
+	uint8_t 	TxDato1[3];
+	uint8_t 	TxDato5[3];
+	uint8_t 	RxDato1;
+	uint8_t 	RxDato5;
+	uint8_t 	RxDato6;
+	int16_t 	Conta;
+	int16_t		Long_string;
+	int16_t		Long_string_Sal;
+	int8_t		Flag_Rx_DMA_PC;
+	int8_t		Flag_Rx_DMA_Sal;
+	int8_t		Flag_Rx_DMA_ECP;
+	int8_t		RxDataLen_PC;					// Largo del string recibido PC
+	int8_t		RxDataLen_Sal;					// Largo del string recibido Salida
+	int8_t		RxDataLen_ECP;					// Largo del string recibido ECP
+	uint8_t		Veo_Peso[81];					// Buffer para enviar peso y tamaño a la PC en modo Test y Trabajo
+
+	/*------------------------------------------------------------------------
+			       D R I V E R   D E   T E C L A D O
+	------------------------------------------------------------------------*/
+	uint16_t	SalScan;
+	int8_t   	Buffer_Teclado[MAXCOLA];
+	int16_t  	Posible_Tecla;
+	int8_t   	Posible_Columna;
+	int8_t   	Flg_Posible;
+	int8_t   	Flg_NoTecla;
+	uint16_t  	Cnt_posible;
+	uint16_t  	Cnt_NoTecla;
+	int16_t   	Ptr_PongoTec;
+	int16_t   	Ptr_ConsumoTec;
+	int8_t   	Cnt_Error;						// Inicializa el contador de error
+
+	/*------------------------------------------------------------------------
+		V A R I A B L E S    A / D    I N T E R N O   M I C R O   4 2 9
+	------------------------------------------------------------------------*/
+	uint16_t 	Cont_AD;           				// contador para promedios de lectura del A/D de las tensiones del 429
+	uint16_t	PromAD[9];            			// Valor leido del A/D promediado de las tensiones del 429
+	uint32_t 	TotalAD[9];          			// Valor Totalizado del A/D para promediar de las tensiones del 429
+	int8_t   	Flag_Medicion;					// Flag parar saber si termine de leer el AD de las tensiones del 429
+	int16_t   	Channel_AD;						// Canal del AD
+	int16_t		Dato_AD[30];					/* Buffer de intercambio con A/D Rx */
+
+	/*------------------------------------------------------------------------
+		V A R I A B L E S    G E N E R A L E S   D E   M A Q U I N A
+	------------------------------------------------------------------------*/
+	int8_t   	Flg_ErrorFlash;					// Si el Flag == True --> hay Error al escribir la Flash
+	int8_t   	Flg_Display;					// Si el Flag == True --> hay display LCD y teclado
+	int8_t	 	Flag_Enable_AD;					// Flag para comenzar a Medir con el A/D principal
+	int8_t 	 	Flag_Trabajo;					/* si = True modo trabajo  */
+	int8_t   	Flag_Primer_ingreso;			/* si = True se ingreso por primera vez al programa  */
+	int8_t 		Flag_MaqOk;						/* flag máquina en condiciones de pasar fruta */
+	int8_t 		Flag_IndicesOk;					/* Flag para sort de cola de salidas */
+	int8_t 		Flag_IndicesOk_E;				/* Flag para sort de cola de etiquetadoras */
+	int8_t		Flag_Init_Tara;					// Flag para habilitar toma de taras
+	int8_t		Flag_Enable_Taras;				// Flag para habilitar la toma de taras desde la PC
+
+    /*      Variables del modo Sort     */
+	int16_t 	Puntero_Dato;					/* puntero al buffer de Trabajo */
+	int16_t 	N_Transferencia;				/* Número de orden de transmisión */
+	int16_t 	Peso_min;						/* Peso mínimo a comparar */
+	int16_t 	Val_Salida[MaxLineas][Tot_Valvulas];	/* Salida asignada según el tamano */
+	int16_t 	Valvula[Tot_Valvulas];			/* Valvulas activas */
+	int16_t 	Indice[MaxLineas][Salidas];
+	int8_t 		Flag_General[MaxLineas][Salidas];
+	int16_t 	Bandeja[MaxLineas][Tot_Valvulas];/* Salida activa */
+	int16_t 	Bandeja_Aux;					/* Salida Aux activa */
+	int16_t 	Bandeja_Act[Salidas];			/* Salida a activar */
+	int16_t 	Tot_Frut_Salidas[Salidas];		/* Total de frutas por salida */
+
+     /* para uso de la etiquetadora */
+	int16_t 	Puntero_Dato_E;					/* puntero al buffer de Trabajo */
+	int8_t 		Flag_General_E[MaxLineas][MaxEtiqueta];
+	int16_t 	Tamano_E[MaxLineas][Max_Tamanos];/* Salida asignada según el tamano */
+	int16_t 	Sal_Etiqueta[Tot_Sal_Etiq];		/* Salidas etiquetadoras */
+	int16_t 	Indice_E[MaxLineas][MaxEtiqueta];
+
+	   /* para uso de PRUEBAS */
+	int16_t 	Error_Aux;					/* Errores de comunicación salidas */
+	int8_t		Dato_Error[3];				/* Valor del Error de comunicación */
+	int32_t 	Cant_Envios;				/* Cantidad de envíos de comunicación */
+
+	/*      DEFINICION DE LAS ESTRUCTURAS	 */
+
+	struct Comunicacion_PC   	Comunica_PC;	// Estructura Comunicación PC
+	struct Comunicacion_PSal 	Comunica_PSal;	// Estructura Comunicación Placas de salida
+	struct Comunicacion_ECP  	Comunica_ECP;	// Estructura Comunicación ECP8266
+	struct reg_Trabajo  		M_Trabajo;		/* 1218 bytes largo de la estructura */
+	struct reg_Trabajo  		Aux_Trabajo;	/* estructura auxiliar para transmitir */
+
+    /*------------------------------------------------------------------------
+					DEFINICION DE LAS TABLAS
+	------------------------------------------------------------------------*/
+		/*   Se definen como const para que la tabla quede en ROM  */
+			// Tabla del teclado 20 Teclas
+			//				Posicion	 0	  1	   2    3	 4    5	   6    7	 8    9
+			const uint8_t Mapeo[20] = { 15,   0,  12,  19,   7,   8,   9,  24,   4,   5,
+										 6,  23,   1,   2,   3,  13,  25,  26,   61,  30};
+
+#endif
+

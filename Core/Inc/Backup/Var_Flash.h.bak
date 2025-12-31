@@ -1,0 +1,99 @@
+/*-------------------------------------------------------------------------------------------------------
+   		DEFINICION DE PROTOTIPOS Y VARIABLES EN MEMORIA FLASH
+---------------------------------------------------------------------------------------------------------*/
+/*
+    Fecha inicialización	:	28/06/2025
+	Fecha actualización 	:	13/07/2025
+	Realizado por	    	:	C.E. Colombo
+	Compilador utilizado	:	ST - Eclipse IDE
+	Proyecto	    		:	Phenix 2025 - 407VGT6
+	Archivo		    		: 	Var_Flash.c
+	Versión					:	1.00.00
+	Objetivo				:	Definicion de variables en memoria Flash
+
+	Definiciones generales de las distintas variables grabadas en memoria Flash
+*/
+/*------------------------------------------------------------------------
+			DEFINICION DE VARIABLES EN FLASH
+-----------------------------------------------------------------------*/
+/*	 	Datos grabados en segmento de 1024 bytes, la última seccion de la memoria de 128K
+ * 		El micro STM32F407VGT6 tiene una Flash de 1Mb particionada en secciones de 16K, 64K y 128K
+ * 		el inicio de la memoria Flash esta en 		0x0800 0000
+ * 		el inicio de la memoria User-Flash  		0x080E 0000		128 Kbytes Sector 11
+ *
+ * 		Total de bytes utilizados en los 128K -->
+ *
+ *		 Variable stored in the memory section '.user_data_ram' to '.user_data_flash'
+ *
+ *		 OJO Hay que agregar en el archivo *.Id
+ *		MEMORY
+				{
+				 CCMRAM      (xrw)    : ORIGIN = 0x10000000, LENGTH = 64K
+				 RAM         (xrw)    : ORIGIN = 0x20000000, LENGTH = 128K
+				 FLASH       (rx)     : ORIGIN = 0x8000000,  LENGTH = 900K
+				 USER_FLASH  (xrw)    : ORIGIN = 0x080E0000, LENGTH = 128K 	// xrw para permitir escritura, si es solo lectura, usa rx
+			     BKPSRAM     (xrw)    : ORIGIN = 0x40024000, LENGTH = 4K
+			     }
+*
+ *   /  User data to be stored in the flash memory goes into USER_FLASH /
+	    .user_data_flash :
+			{
+			. = ALIGN(4);
+			*(.user_data_flash)     / .user_data_flash sections /
+			*(.user_data_flash*)    / .user_data_flash sections /
+
+			. = ALIGN(4);
+			} >USER_FLASH
+
+ *
+  uint32_t __attribute__((__section__(".user_data_flash"))) Variable;
+ */
+
+/* -------------------------      Includes      --------------------------------------------------------*/
+#include "stm32f4xx_hal.h"
+#include "Definiciones.h"
+
+/* Base address of the Flash sectors Bank 1 */
+#define ADDR_FLASH_SECTOR_0     ((uint32_t)0x08000000) /* Base @ of Sector 0, 16 Kbytes */
+#define ADDR_FLASH_SECTOR_1     ((uint32_t)0x08004000) /* Base @ of Sector 1, 16 Kbytes */
+#define ADDR_FLASH_SECTOR_2     ((uint32_t)0x08008000) /* Base @ of Sector 2, 16 Kbytes */
+#define ADDR_FLASH_SECTOR_3     ((uint32_t)0x0800C000) /* Base @ of Sector 3, 16 Kbytes */
+#define ADDR_FLASH_SECTOR_4     ((uint32_t)0x08010000) /* Base @ of Sector 4, 64 Kbytes */
+#define ADDR_FLASH_SECTOR_5     ((uint32_t)0x08020000) /* Base @ of Sector 5, 128 Kbytes */
+#define ADDR_FLASH_SECTOR_6     ((uint32_t)0x08040000) /* Base @ of Sector 6, 128 Kbytes */
+#define ADDR_FLASH_SECTOR_7     ((uint32_t)0x08060000) /* Base @ of Sector 7, 128 Kbytes */
+#define ADDR_FLASH_SECTOR_8     ((uint32_t)0x08080000) /* Base @ of Sector 8, 128 Kbytes */
+#define ADDR_FLASH_SECTOR_9     ((uint32_t)0x080A0000) /* Base @ of Sector 9, 128 Kbytes */
+#define ADDR_FLASH_SECTOR_10    ((uint32_t)0x080C0000) /* Base @ of Sector 10, 128 Kbytes */
+#define ADDR_FLASH_SECTOR_11    ((uint32_t)0x080E0000) /* Base @ of Sector 11, 128 Kbytes */
+
+#if PosVariables != 0		// Variables externas
+ /*------------------------------------------------------------------------
+		DEFINICION DE VARIABLES EN FLASH
+------------------------------------------------------------------------*/
+	extern uint16_t __attribute__((__section__(".user_data_flash")))	Firma_FL;			// Firma Flash
+	extern uint16_t __attribute__((__section__(".user_data_flash"))) 	Numero_Grabacion_FL;// 2 bytes largo. para verificar si se guero en Flash
+	extern int16_t 	__attribute__((__section__(".user_data_flash"))) 	Tabla_Limites_FL[Max_Tamanos][MaxLineas];// Se agregó para calcular los tamaños
+	extern struct reg_Sal  __attribute__((__section__(".user_data_flash")))	E_Salidas_FL[MaxLineas][Max_Tamanos];	 // 3168 bytes largo de la estructura
+	extern uint16_t __attribute__((__section__(".user_data_flash")))    Fin_BK_CCM_FL;		// Fin SRAM-CCM = BackUp Ram
+
+	extern int16_t  __attribute__((__section__(".user_data_flash")))	E_Etiqueta_FL[MaxEtiqueta][MaxLineas][Max_Tamanos];/* Tamanio asignado a las etiquetadoras (4) */
+	extern int8_t   __attribute__((__section__(".user_data_flash")))	FirmaASE_FL[22];	// Firma del equipo
+
+	extern struct Comunicacion_conf __attribute__((__section__(".user_data_flash")))	Comu_Conf_FL[3];// Configuración Gral de las series   16 * 3 Bytes
+	extern struct Config_Maquina	__attribute__((__section__(".user_data_flash")))	Config_FL;		// Configuración de Máquina			  126 Bytes
+	extern uint16_t __attribute__((__section__(".user_data_flash")))		Fin_Ram_Flash_FL;	// Final de grabación
+#else						// Variables propias
+	uint16_t 		__attribute__((__section__(".user_data_flash")))	Firma_FL;			// Firma Flash
+	uint16_t 		__attribute__((__section__(".user_data_flash"))) 	Numero_Grabacion_FL;// 2 bytes largo. para verificar si se guero en Flash
+	int16_t 		__attribute__((__section__(".user_data_flash"))) 	Tabla_Limites_FL[Max_Tamanos][MaxLineas];// Se agregó para calcular los tamaños
+	struct reg_Sal  __attribute__((__section__(".user_data_flash")))	E_Salidas_FL[MaxLineas][Max_Tamanos];	 // 3168 bytes largo de la estructura
+	uint16_t  		__attribute__((__section__(".user_data_flash")))    Fin_BK_CCM_FL;		// Fin SRAM-CCM = BackUp Ram
+
+	int16_t __attribute__((__section__(".user_data_flash")))	E_Etiqueta_FL[MaxEtiqueta][MaxLineas][Max_Tamanos];/* Tamanio asignado a las etiquetadoras (4) */
+	int8_t  __attribute__((__section__(".user_data_flash")))	FirmaASE_FL[22];			// Firma del equipo
+
+	struct Comunicacion_conf __attribute__((__section__(".user_data_flash")))	Comu_Conf_FL[3];// Configuración Gral de las series   16 * 3 Bytes
+	struct Config_Maquina	 __attribute__((__section__(".user_data_flash")))	Config_FL;	// Configuración de Máquina				  126 Bytes
+	uint16_t __attribute__((__section__(".user_data_flash")))	Fin_Ram_Flash_FL;			// Final de grabación
+#endif

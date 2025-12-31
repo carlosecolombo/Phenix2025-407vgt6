@@ -1,0 +1,210 @@
+OPCIÓN 1 — Review quirúrgico (línea por línea / por bloques) del código actual
+Proyecto: Phenix 2025 (STM32F407) — foco: comunicación PC ↔ MCU por UART + DMA (RS-485)
+
+Archivo principal revisado: Core/Src/Comunicacion.c
+Archivos relacionados: Core/Src/stm32f4xx_it.c, Core/Src/main.c + headers de variables/estructuras
+
+======================================================================
+0) TL;DR (lo más importante)
+======================================================================
+✅ Lo que está bien:
+- Uso de HAL_UARTEx_ReceiveToIdle_DMA (buena elección para largo variable).
+- Desactivación de DMA_IT_HT (half-transfer) para RX (reduce interrupciones).
+- Manejo del pin DE/RE (Dir_485_PC) antes/después de TX por DMA.
+- Protocolo con framing (STX + long + CK) documentado.
+
+⚠️ Lo que hoy te puede generar cuelgues / glitches intermitentes:
+A) Rearmado de RX DMA desde más de un lugar (callback + lógica principal).
+B) Variables compartidas ISR/Main sin “contrato” claro (volatile + orden de acceso).
+C) TX por DMA sin “tx_busy” explícito (riesgo de colisión si un envío pisa otro).
+D) Recuperación ante error UART/DMA incompleta (ErrorCallback / reinicio limpio).
+
+======================================================================
+1) Inicio / estructura general
+======================================================================
+- El archivo mezcla:
+  (1) parsing de protocolo,
+  (2) armado de buffers,
+  (3) driver UART/RS485,
+  (4) callbacks HAL.
+  Funciona, pero dificulta asegurar invariantes (sobre todo con DMA).
+
+Sugerencia (sin reescribir todo):
+- Extraer 2 capas:
+  - uart_dma.c (solo start/stop/rearm/tx_busy/error recovery)
+  - proto_pc.c (solo parse/armado de mensajes)
+
+======================================================================
+2) TX por DMA (huart1 PC/RS485)
+======================================================================
+Bloque relevante (aprox):
+- Set DE pin (Dir_485_PC) en 1 antes de transmitir.
+- HAL_UART_Transmit_DMA(&huart1, Comunica_PC.buf_tx_PC, Comunica_PC.tot_Tx);
+
+✅ OK:
+- DE=1 antes de TX.
+- En HAL_UART_TxCpltCallback(...) bajas DE a 0.
+
+⚠️ Riesgo:
+- No hay un “busy flag” que impida llamar a HAL_UART_Transmit_DMA si el DMA
+  anterior todavía no terminó.
+  Si alguna rama de código llama a transmitir “de nuevo”, HAL puede devolver BUSY
+  o, peor, podés pisar estados/longitudes.
+
+✅ Fix mínimo recomendado (sin cambiar tu diseño):
+- Agregar flag global/estático:
+    volatile uint8_t PC_TxBusy = 0;
+
+- Wrapper:
+    HAL_StatusTypeDef PC_SendDMA(uint8_t *buf, uint16_t len)
+    {
+        if (PC_TxBusy) return HAL_BUSY;
+        PC_TxBusy = 1;
+        HAL_GPIO_WritePin(Dir_485_PC_GPIO_Port, Dir_485_PC_Pin, SET);
+        return HAL_UART_Transmit_DMA(&huart1, buf, len);
+    }
+
+- En HAL_UART_TxCpltCallback:
+    if (huart->Instance == huart1.Instance) {
+        HAL_GPIO_WritePin(...RESET);
+        PC_TxBusy = 0;
+    }
+
+- También en ErrorCallback/Abort:
+    PC_TxBusy = 0;
+    DE=0.
+
+======================================================================
+3) RX por DMA con IDLE — HAL_UARTEx_RxEventCallback
+======================================================================
+Tu callback actual (resumen):
+- Si huart1:
+    Flag_Rx_DMA_PC = true;
+    RxDataLen_PC = Size;
+    Flag_Rec_PC = true;
+- En el mismo bloque aparecen intentos/ideas de “reiniciar para el siguiente paquete”
+  y además hay otro reinicio posterior cuando Flag_Rec_PC==true.
+
+✅ OK:
+- Guardar “Size” y levantar una bandera es el patrón correcto.
+
+⚠️ Problema clave:
+- Reiniciar la recepción (HAL_UARTEx_ReceiveToIdle_DMA) desde más de un lugar
+  genera carreras:
+  - el callback puede disparar y rearmar mientras el main todavía está copiando/procesando
+  - o el main rearma y el callback rearma otra vez
+  Resultado típico: “se colgó el DMA” / se pierde el siguiente paquete / tamaños raros.
+
+✅ Fix mínimo recomendado (conservador):
+Regla: “RX DMA se rearma en 1 solo lugar”.
+
+Opción A (recomendada): rearme SOLO en main, después de procesar:
+- En callback: SOLO set flags + len.
+- En main:
+    if (Flag_Rec_PC) {
+        Flag_Rec_PC = false;
+        Procesar_Comando_PC(RxBuffer_PC_DMA, RxDataLen_PC);
+        HAL_UARTEx_ReceiveToIdle_DMA(&huart1, RxBuffer_PC_DMA, Buffer_Rx);
+        __HAL_DMA_DISABLE_IT(huart1.hdmarx, DMA_IT_HT);
+    }
+
+Opción B: rearme SOLO en callback (y main solo procesa copia):
+- En callback:
+    copiar Size y “congelar” el buffer a otro buffer de trabajo (doble buffer),
+    rearme inmediatamente,
+- En main:
+    procesa el buffer de trabajo.
+
+⚠️ Importante:
+Si tu protocolo es binario, NO dependas de “Null terminator”.
+Trabajá siempre con (ptr, len).
+
+======================================================================
+4) Desactivar Half-Transfer (DMA_IT_HT)
+======================================================================
+Veo que ya tenés:
+    __HAL_DMA_DISABLE_IT(huart1.hdmarx, DMA_IT_HT);
+
+✅ Bien. Sugerencia:
+- Hacerlo una vez en init justo después de arrancar el RX DMA, y no repetidamente.
+  No es grave repetirlo, pero ensucia el flujo.
+
+======================================================================
+5) Parsing de protocolo (STX / long / ck)
+======================================================================
+Comentario de formato:
+  [stx][Long string][n datos][ck]
+
+✅ Buen framing.
+
+⚠️ Riesgos típicos que quiero que revises en tu parser:
+- Si recibís paquetes “pegados” (back-to-back) la estrategia “un buffer por paquete”
+  se queda corta.
+- Si el PC manda 2 paquetes rápido, podés perder uno si rearme tarda.
+
+✅ Recomendación (sin cambiar protocolo):
+- Implementar parser incremental que soporte:
+  - paquete incompleto (espera más bytes)
+  - dos paquetes concatenados (consume uno y sigue)
+
+Esto se hace fácil con ring buffer (ver opción 2), o con doble buffer + cola de “frames”.
+
+======================================================================
+6) Variables compartidas ISR/Main (volatile + orden)
+======================================================================
+Cualquier variable:
+- escrita en callback ISR
+- leída en main
+
+Debe ser:
+- volatile
+- y, si son dos variables “flag + len”, conviene leerlas de forma atómica:
+
+Patrón:
+    uint16_t len;
+    __disable_irq();
+    if (Flag_Rec_PC) { Flag_Rec_PC = 0; len = RxDataLen_PC; }
+    __enable_irq();
+
+No siempre hace falta, pero evita “flag true con len viejo”.
+
+======================================================================
+7) Manejo de errores UART/DMA (recuperación)
+======================================================================
+Veo “Error_Handler_UART()” y mensajes en LCD cuando falla el reinicio.
+
+✅ Tener manejo de error es bueno.
+
+⚠️ Pero faltan dos callbacks típicos que ayudan muchísimo:
+- HAL_UART_ErrorCallback
+- HAL_UART_AbortCpltCallback (si abortás)
+
+✅ Plan de recuperación recomendado (simple):
+En ErrorCallback:
+- HAL_UART_DMAStop(&huart1)
+- limpiar flags
+- rearmar ReceiveToIdle_DMA
+- DE=0
+- tx_busy=0
+
+======================================================================
+8) Pequeñas mejoras de legibilidad que bajan bugs
+======================================================================
+- Reemplazar números mágicos:
+    7, 8, 16, Buffer_Rx, etc
+  por macros con nombre (ya empezaste con PUNTERO_TX_MAX; misma idea).
+
+- En TX:
+    validar len <= Buffer_Tx antes de transmitir.
+
+======================================================================
+9) Checklist final (si esto se cumple, tu comunicación queda “a prueba de balas”)
+======================================================================
+[ ] RX DMA se rearma en UN solo lugar.
+[ ] Callback RX solo hace: guardar len + set flag (nada de parse pesado).
+[ ] Variables ISR/Main: volatile + lectura coherente.
+[ ] TX DMA: tx_busy + DE pin + TxCpltCallback + ErrorCallback.
+[ ] Parser: trabaja con (buffer,len) y tolera paquetes pegados.
+[ ] Si hay RS485: nunca dejar DE en 1 si falla TX.
+
+Fin Opción 1.

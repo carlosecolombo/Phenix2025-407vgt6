@@ -1,0 +1,177 @@
+
+/*---------------------------------------------------------------------------
+		L I B R E R I A         V A R I O S
+-----------------------------------------------------------------------------
+	Fecha inicialización:	01/05/2022
+	Fecha actualización :	05/05/2022
+	Realizado por	    :	C.E. Colombo
+	Compilador utilizado:	ST - Eclipse IDE
+	Proyecto	    	:	Phenix 2022
+	Versión		    	:	1.00.00
+	Archivo		    	:	Libreria.c
+	Objetivo	    	:	rutinas generales propias
+*/
+#include "stm32f4xx_hal.h"
+#include "Definiciones.h"
+
+// Invocacion de funciones externas
+
+// Declaracion de funciones de este modulo
+int8_t *mi_itoa(uint16_t numero, int8_t *buffer,int8_t Largo,int8_t saco_ceros);		// Convertir un entero en un dato ASCII de 5 caracteres
+int8_t * mi_ltoa(uint32_t numero, int8_t *buffer, int8_t Largo,int8_t saco_ceros);	// Convertir un entero long en un dato ASCII de 10 caracteres
+int16_t mi_atoi(int8_t * s,int8_t Largo);											// Convertir una cadena ASCII de 5 caracteres en un entero
+int8_t *Pongo_Punto(int8_t * Dato, int8_t *buffer, int16_t decimales);				// pongo el punto decimal donde corresponda y saco los ceros no significativos
+uint16_t check_sum(uint16_t *ptr_datos,int16_t cant_bytes);
+
+/* -------------------------------------------------------------------------------------------------------------- */
+/* Rutina   	: mi_itoa
+*  Objetivo 	: Convertir un entero en un dato ASCII
+*  Entrada  	: dirección del dato a convertir, se deja el resultado en la misma direccion
+*  Descripcion 	: Retorna en '*buffer' un string de 5 caracteres + NULL con la representación
+*				decimal ASCII del 'número', puede o no sacar los ceros no significativos
+*/
+int8_t *mi_itoa(uint16_t numero, int8_t *buffer,int8_t Largo,int8_t saco_ceros)
+	{
+	int16_t i;
+
+	buffer[Largo] = 0;
+	for(i = Largo - 1; i >= 0; i--)
+		{
+		buffer[i] = (int8_t)(numero%10) + '0';
+		numero /= 10;
+		}
+	if(saco_ceros == true)
+		{
+		for(i = 0; i <= Largo - 2; i++) 	// Saco los ceros no significativos
+			{
+			if(buffer[i] == '0')
+				buffer[i] = Espacio;
+			else
+				break;
+			}
+		}
+	return(buffer);
+	}
+
+/* -------------------------------------------------------------------------------------------------------------- */
+/* Rutina   	: mi_ltoa
+*  Objetivo 	: Convertir un entero en un dato ASCII
+*  Entrada  	: dirección del dato a convertir, se deja el resultado en la misma direccion
+*  Descripcion 	: Retorna en '*buffer' un string de 10 caracteres + NULL con la representación
+*				  decimal ASCII del 'número'
+*/
+int8_t * mi_ltoa(uint32_t numero, int8_t *buffer, int8_t Largo,int8_t saco_ceros)
+{
+	int8_t i;
+
+	buffer[Largo] = 0;
+	for(i = Largo - 1; i >= 0; i--)
+		{
+		buffer[i]= (int8_t)(numero % 10)+'0';
+		numero/=10;
+		}
+	if(saco_ceros == true)
+		{
+		for(i=0;i<=Largo-2;i++) 	// Saco los ceros no significativos
+			{
+			if(buffer[i] == '0')
+				buffer[i] = Espacio;
+			else
+				break;
+			}
+		}
+	return(buffer);
+	}
+
+/* -------------------------------------------------------------------------------------------------------------- */
+/* Rutina   	:	mi_atoi()
+*  Objetivo 	: 	convierte una cadena ASCII en un entero
+*  Entrada  	: 	puntero a la cadena en 's'
+*  Retorna		:	un entero con el numero
+*  Descripcion  : la longitud maxima de la cadena es 5 caracteres y debe finalizar con NULL (0x00)
+*/
+int16_t mi_atoi(int8_t * s,int8_t Largo)
+	{
+	uint8_t i;
+	int16_t n;
+
+	i = 0;
+	n = 0;
+	while(s[i] != Null && Largo > i)
+		{
+		if (s[i] >= 0x30 && s[i] <= 0x39)
+			n = (10 * n) + (s[i] - '0');
+		else
+			{
+	    	n=0;
+			s[i+1] = Null;
+			}
+		i++;
+		}
+	return(n);
+	}
+
+/* -------------------------------------------------------------------------------------------------------------- */
+/* Rutina   : int8_t *Pongo_Punto(int8_t * Dato, int decimales)
+*  Objetivo : Pongo el punto decimal y saco los ceros no significativos
+*  Entrada  : dato a modificar
+
+*
+*/
+int8_t *Pongo_Punto(int8_t * Dato, int8_t *buffer, int16_t decimales)
+	{
+	int8_t y;
+	int8_t x;
+	uint8_t espacio;
+
+	x = 0;
+	y = 0;
+	espacio = false;
+    if(decimales > 5) 				// si no tengo punto pongo un espacio
+    	{
+    	buffer[0] = ' ';
+     	y++;
+    	}
+
+    while(Dato[x] != Null)
+		{
+		if((Dato[x] == '0') && (espacio == false) && (x < decimales - 1))
+			Dato[x] = ' ';
+		else
+			espacio = true;
+
+		buffer[x + y] = Dato[x];
+    	if((decimales - 1) == x)
+    		{
+        	y++;
+        	buffer[x + y] = '.';
+    		}
+		x++;
+		}
+	return(buffer);
+	}
+
+
+/* -------------------------------------------------------------------------------------------------------------- */
+/* Rutina   : unsigned int8_t check_sum(unsigned cantidad++ *ptr_datos,unsigned cantidad++ cant_bytes)
+*  Objetivo : Calcular el check sum
+*  Entrada  :
+
+*/
+uint16_t check_sum(uint16_t *ptr_datos,int16_t cant_bytes)
+	{
+	uint16_t cantidad;
+	uint16_t sumatoria;
+
+
+	sumatoria = 0;
+	cantidad = 0;
+
+	for(cantidad = 0;cantidad<cant_bytes;cantidad++)
+		{
+		sumatoria += *(ptr_datos + cantidad);
+		}
+
+	return(sumatoria);
+	}
+

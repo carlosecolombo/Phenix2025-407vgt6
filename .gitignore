@@ -1,0 +1,18 @@
+# STM32 / CubeIDE
+Debug/
+Release/
+build/
+
+# Eclipse / CubeIDE
+.metadata/
+.settings/
+
+# Objetos y binarios
+*.o
+*.d
+*.elf
+*.map
+*.lst
+
+# macOS
+.DS_Store

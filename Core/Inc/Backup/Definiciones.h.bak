@@ -1,0 +1,365 @@
+/*---------------------------------------------------------------------------
+				DEFINICIONES GENERALES Y CONSTANTES
+-----------------------------------------------------------------------------
+   	Fecha inicialización	:	28/06/2025
+	Fecha actualización 	:	09/10/2025
+	Realizado por	    	:	C.E. Colombo
+	Compilador utilizado	:	ST - Eclipse IDE
+	Proyecto	    		:	Phenix 2025 - 407VGT6
+	Archivo		    		: 	Definiciones.h
+	Versión	   	    		:	2.20.00
+	Objetivo	    		:	Definiciones generales y constantes
+*/
+#define FLASH_USER_START_ADDR   			ADDR_FLASH_SECTOR_11   	// Start @ of user Flash area para variables Generales
+#define RAM_CCM_START_ADDR    				0x10000000  			// Start @ of CCM RAM area para variables Generales
+#define RAM_CCM_END_ADDR      				RAM_CCM_START_ADDR + 0X1FFF  // 8191 BYTES Final @ of CCM RAM area para variables Generales
+#define BKPSRAM_BASE_ADDRESS      			0x40024000U 			// Dirección base de la Backup SRAM
+#define BKPSRAM_SIZE_BYTES        			(4 * 1024) 				// 4 Kilobytes
+#define BKPSRAM_WORD_ADDRESS(offset)  		(uint32_t *)(BKPSRAM_BASE_ADDRESS + (offset))// Un puntero tipo uint32_t para acceder a la Backup SRAM
+#define BKPSRAM_GetMemorySize()				(0x00001000)
+#define BKPSRAM_Write8(address, value)		(*(__IO uint8_t *) (BKPSRAM_BASE + (address)) = (value))
+#define BKPSRAM_Read8(address)				(*(__IO uint8_t *) (BKPSRAM_BASE + address))
+#define BKPSRAM_Write16(address, value)		(*(__IO uint16_t *) (BKPSRAM_BASE + (address)) = (value))
+#define BKPSRAM_Read16(address)				(*(__IO uint16_t *) (BKPSRAM_BASE + address))
+#define BKPSRAM_Write32(address, value)		(*(__IO uint32_t *) (BKPSRAM_BASE + (address)) = (value))
+#define BKPSRAM_Read32(address)				(*(__IO uint32_t *) (BKPSRAM_BASE + address))
+#define BKPSRAM_WriteFloat(address, value)	(*(__IO float *) (BKPSRAM_BASE + (address)) = (value))
+#define BKPSRAM_ReadFloat(address)			(*(__IO float *) (BKPSRAM_BASE + address))
+
+/* Definiciones generales de las distintas variables */
+
+#define Firma_ASE_Def			"PHENIX 2025 VER.2.15"
+#define Firma_Tam				"*CARLOSASEVER-*2.15*"	/* No debe superar los 20 caracteres */
+#define Version_Tam				"*VER 2.15 - 20250917"
+#define Version_Int				202509172.15
+#define Version_Int1			"Ver.2-2025*Rev 15   "
+#define Firma_Def				0x5A5A					/* Firma numérica para verificar la Flash Grabada */
+#define MAXCOLA 				20          			/* máxima cantidad de teclas en la cola */
+#define sin_tecla				-1						/* no hay tecla disponible en el buffer */
+#define FREE					-1          			// hay lugar libre, cola teclado vacia
+#define True					-1
+#define true					-1
+#define False					0x0000
+#define false					0x0000
+#define Null					0x0000
+#define null					0x0000
+#define NULO					0x0000
+#ifndef NULL
+    #define NULL				0x0000
+#endif
+		/* Coeficientes de los A/D */
+#define Coef_Vbat_Def			603						// Valor del coeficiente del AD V. Batería 	--> + 3,3V
+#define Coef_PC2_Def			592						// Valor del coeficiente del AD PC2 		--> + 5,00VAD
+#define Coef_PC3_Def			513						// Valor del coeficiente del AD PC3 		--> - 5,00VAD
+#define Coef_PC4_Def			333						// Valor del coeficiente del AD PC4 		--> + 3,3V
+#define Coef_PC5_Def			514						// Valor del coeficiente del AD PC5 		--> + 5,00VD
+
+/**
+ * Definiciones de constantes para la medicion del peso
+ */
+
+#define Limite_cero				5000					// Limite maximo del cero en cuentas durante la calibracion = $1F4 = 500 (Tomando como valor maximo 8192 cuentas = 13bits)
+#define Div_Min					1						// Division minima de la maquina = 1
+#define Cnt_Div					1000					// Cantidad de divisiones de la maquina
+#define Capacidad_Maxima		1000					// Capacidad Maxima = Div_Min * Cnt_Div (no se modifica por configuracion desde la PC)
+#define Divisor					4						// Divisor para calcular el coeficiente de correccion de peso
+#define Cant_Med_Cal			200000					// Cantidad de Mediciones durante la calibracion
+
+
+#define Numero_CPU_ASCII		"0000001"				// 7 int8_t Numero de serie de la CPU
+#define Nodo_def				"81"					// 2 int8_t Numero de Nodo
+#define Ncliente_def			"0001"					// 4 int8_t Nombre del Cliente
+#define Pal_ClaveF_def			"538853"				// 6 int8_t Password inicial fábrica
+#define Pal_Clave_def			"123456"				// 6 int8_t Password inicial
+#define Nombre_CPU     			"ST-407 Phenix"			// 13 int8_t
+#define Vers_CPU       			"Ver. 2.20"				//  9 int8_t
+#define Fabricante  			"C.E.Colombo"			// 11 int8_t
+#define Fecha_Inicial			"09/10/25"
+#define NumeroMagico			0x32F1					// Número para que el RTC sepa si debe inicializarse
+
+#define MaxLineasASCII       		"8"    				// Máxima cantidad de lÌneas
+#define MaxLineas         			8     				// de 0 a 7 Máxima cantidad de líneas
+#define MaxPlatillosASCII  			"100"    			// Máxima cantidad de platillos
+#define MaxPlatillos    			100     			// Máxima cantidad de platillos
+#define PesoPatronASCII    			"999"    			// Máxima valor del peso patrón
+#define PesoPatron      			999     			// Máxima valor del peso patrón
+#define SalidasASCII	    		"32"    			// Máxima Cantidad de salidas
+#define Salidas			 			32					// de 0 a 31 Máxima Cantidad de salidas
+#define MaxEtiquetaASCII     		"4"    				// Máxima cantidad de etiquetadoras
+#define MaxEtiqueta       			4     				// de 0 a 4 Máxima cantidad de etiquetadoras
+#define dif_taraASCII       		"05"    			// Diferencia de tara
+#define dif_tara          			5     				// Diferencia de tara
+#define Num_Disco      				"000000123"
+#define Nombre_Sal     				"PSal"
+#define Vers_Sal       				"Ver. 1.00"
+#define Nombre_Etiq    				"PEti"
+#define Vers_Etiq      				"Ver. 1.00"
+#define M_Bandeja					0					// Modo bandeja 0--> sin Bandeja, 1--> con bandeja
+
+#define	Num_CPU						1
+#define Cant_Pul_Sincro		    	100					// Cantidad de pulsos de sincronismo
+#define EnableAD		    		25					// Cantidad de pulsos Enable A/D
+#define DisableAD		    		99					// Cantidad de pulsos Disable A/D
+#define Salidas			 			32					// de 0 a 31 Máxima Cantidad de salidas
+#define MaxPlacaSal      			32     				// de 0 a 31 Máxima cantidad de placas de salidas
+#define MaxBandeja        			4     				// de 0 a 4 Máxima cantidad de placas para indicar las salidas
+#define Max_Tamanos		 			22					// de 0 a 21 Máxima cantidad de tamaños
+#define Tot_Valvulas				256					// (MaxLineas * Salidas)
+#define Tot_Sal_Etiq	 			32					// (MaxLineas * MaxEtiqueta)
+#define Cant_Med_Oscilos			50					// Cantidad de mediciones en modo osciloscopio por cada pulso de sincro fino
+
+#define	Num_Pro_def					32
+
+/*------------------------------------------------------------------------
+        DEFINICION DE LAS CONSTANTES DE LA COMUNICACIONES SERIE
+------------------------------------------------------------------------*/
+//				Comunicación PC
+#define Comu_PC						0					// huart1
+#define velocidad_def_PC			3					// Velocidad de la Usart por defecto  	4 = 115200 Baudios,
+														//								 		3 = 57600,
+														//								 		2 = 38400,
+														//								 		1 = 19200,
+														//								 		0 = 9600
+#define bits_data_def_PC			8					// Cantidad de bits de datos de la comunicacion por defecto
+#define paridad_def_PC				0					// Paridad de la comunicacion por defecto
+#define Tipo_Comu_def_PC			1					// Comunicación 0 --> 232 ó 1 --> 485
+
+//				Comunicación Placa salidas
+#define	Comu_PSalidas				1					// huart8
+#define velocidad_def_PSal			0					// Velocidad de la Usart por defecto  	4 = 115200 Baudios,
+														//									 	3 = 57600,
+														//									 	2 = 38400,
+														//									 	1 = 19200,
+														//									 	0 = 9600
+#define bits_data_def_PSal			8					// Cantidad de bits de datos de la comunicacion por defecto
+#define paridad_def_PSal			0					// Paridad de la comunicacion por defecto
+#define Tipo_Comu_def_PSal			1					// Comunicación 0 --> 232 ó 1 --> 485
+
+//				Comunicación ECP8266
+#define	Comu_ESP					2					// huart5
+#define velocidad_def_ECP			4					// Velocidad de la Usart por defecto 	4 = 115200 Baudios,
+														//									 	3 = 57600,
+														//										2 = 38400,
+														//									 	1 = 19200,
+														//									 	0 = 9600
+#define bits_data_def_ECP			8					// Cantidad de bits de datos de la comunicacion por defecto
+#define paridad_def_ECP				0					// Paridad de la comunicacion por defecto
+#define Tipo_Comu_def_ECP			0					// Comunicación 0 --> 232 ó 1 --> 485
+
+//				Datos comunes
+#define Buffer_Rx				150						// Largo del buffer de recepción PC
+#define Buffer_Tx				150						// Largo del buffer de transmisión PC
+#define Buffer_Rx_Sal			50						// Largo del buffer de recepción Placas Salida
+#define Buffer_Tx_Sal			50						// Largo del buffer de transmisión Placas Salida
+
+#define STX     				0x02
+#define ETX     				0x03
+#define ENQ     				0x05
+#define ACK     				0x06
+#define SI      				0x0F
+#define	LF						0x0A
+#define NAK     				0x15
+#define CAN     				0x18
+#define ESC						0x1B
+#define GS						0x1D
+#define Espacio					0x20
+#define Comillas 				0x22
+#define Signo					0x2D
+#define Beg_chr					STX
+
+/* Comandos placa CPU */
+#define Sort_On         		0x07    /*  7 Modo Trabajo On */
+#define Sort_Off        		0x52    /* 82 Modo Trabajo Off */
+#define M_Limite        		0x0A    /* 10 Modificar un lÌmite */
+#define Calidad         		0x0B    /* 11 Calidad */
+#define C_Limites       		0x0C    /* 12 Modificar la cantidad de lÌmites */
+#define M_Color         		0x0D    /* 13 Modo Color On-Off */
+#define M_Pack          		0x0E    /* 14 Modifica un pack de datos de trabajo */
+#define Pasar_Fruta     		0x39    /* 57 15 Habilita el pasaje de fruta */
+#define Guardar_datos   		0x11    /* 17 Guardar datos en memoria */
+#define Rx_Key          		0x12    /* 18 Datos generales de la m·quina */
+#define Acumuladores    		0x13    /* 19 Transmitir los acumuladores */
+#define Esc             		0x14    /* 20 Dejar de hacer una tarea */
+#define Com_desc        		0x61    /* 97 21 Comando desconocido */
+#define Tx_Key          		0x16    /* 22 Transmite datos generales de la m·quina */
+#define Retransmite     		0x17    /* 23 Retransmite lo ˙ltimo enviado */
+#define Net_Rate        		0x38    /* 56 24 Baud rate de la CPU TPU */
+#define Cambio_Lote     		0x20    /* 32 Cambio de lote */
+#define Eti_data        		0x22    /* 34 Datos de la etiquetadora */
+#define Eti_table       		0x23    /* 35 Frutos a etiquetar */
+#define Set_Nodo        		0x2F    /* 47 Set N˙mero de nodo de la CPU */
+#define Set_NserieCpu   		0x30    /* 48 Set N˙mero de serie de la CPU */
+#define Get_NserieCpu   		0x31    /* 49 Get N˙mero de serie de la CPU */
+#define Version_CPU     		0x32    /* 50 VersiÛn de la CPU */
+#define Get_Net_Rate    		0x33    /* 51 Get baud rate de la CPU TPU */
+#define Get_Fecha       		0x34    /* 52 Get Fecha y hora */
+#define Set_Fecha       		0x35    /* 53 Set Fecha y hora */
+#define Set_Distancias  		0x36    /* 54 Set las distancias de las salidas */
+#define Get_Distancias  		0x37    /* 55 Get las distancias de las salidas */
+#define No_nodo         		0x58    /* 88 No es para este nodo */
+#define Borrar_M8K				0x59	/* 89 Borrar la memoria de 8k y re-inicializar */
+#define ACK_1					0x5A	/* 90 Borrar la memoria de 8k y re-inicializar */
+#define NAK_1					0x5B	/* 91 Borrar la memoria de 8k y re-inicializar */
+#define CAN_1					0x5C	/* 92 Borrar la memoria de 8k y re-inicializar */
+#define Net_Rate_SCI    		0x5D    /* 93 Baud rate de la CPU SCI */
+#define Get_Net_Rate_SCI 		0x5E    /* 94 Get baud rate de la CPU SCI */
+#define Get_N_Disco				0x3A	/* 58 Get el n˙mero de disco guardado para control de CPU --> PC */
+#define Set_N_Disco				0x3B	/* 59 Set el n˙mero de disco para control de CPU --> PC */
+
+#define Get_Datos_Gen			0x3D
+
+    /* Comandos placa salidas */
+#define P_Salida        		0x19    /* 25 Transfiere los comandos recibidos */
+#define Out_On_estatica 		0x19    /* 25 Activar una salida */
+#define Out_Off         		0x1A    /* 26 Desactivar salidas */
+#define Set_Id          		0x40    /* 64 Set el Id de la placa salida */
+#define Get_Id          		0x41    /* 65 Get el Id de la placa salida */
+#define Set_Nserie      		0x42    /* 66 Set n˙mero de serie placa salida */
+#define Get_Nserie      		0x43    /* 67 Get n˙mero de serie placa salida */
+#define Set_Offset      		0x44    /* 68 Set offset placa salida */
+#define Get_Offset      		0x45    /* 69 Get offset placa salida */
+#define Out_On_dinamica 		0x46    /* 70 Activar salida en forma din·mica */
+#define Version_Sal     		0x47    /* 71 VersiÛn de la placa de salida */
+#define Set_Baud_Sal    		0x48    /* 72 Set baud rate placa salida */
+#define Save_Sal        		0x49    /* 73 Guardar datos en la memoria. */
+#define Set_NodoSal     		0x4A    /* 74 Set N˙mero de nodo placa Salida */
+
+/*---------------------------------------------------------------------------*/
+    /* Comandos  A/D 	---- 	Ver de Sacar OJO   */
+#define T_Cero          		0x01    /*	1 1 Tomar el cero */
+#define T_Peso          		0x62    /* 98 2 Tomar el peso */
+#define T_Scero         		0x63    /* 99 3 Tomar el segundo cero */
+#define V_Cuentas       		0x04    /* 	4 Ver las cuentas y el peso del A/D en
+											  forma estática y si está en funcionamiento
+											  se muestran el peso dinámico (si se supera
+											  los 50gr.) y el número de platillo*/
+#define T_Taras         		0x05    /* 	5 Tomar las taras */
+#define T_Taras1        		0x54    /* 84 Para ver si termino la tarea de taras */
+#define P_Bruto_6       		0x60    /* 96 6 Ver el peso de los 6 canales del A/D */
+#define F_Calib         		0x08    /* 	8 Fin de la calibración */
+#define V_Taras         		0x09    /*	9 Verificar taras*/
+#define In_Test         		0x1B    /* 27 Test de sensores */
+#define Osciloscopio    		0x1D    /* 29 Ver los datos de peso en pantalla */
+#define T_Pdin          		0x1E    /* 30 Tomar el peso dinámico y sacar coeficiente */
+#define Set_Datos_Gen   		0x4B    /* 75 Set datos generales de la máquina (Vamos a tomar los offset solamente) */
+#define Set_OffsetAD    		0x4D    /* 77 Set offset placa A/D */
+#define Get_OffsetAD    		0x4E    /* 78 Get offset placa A/D */
+#define Version_AD				0x4F	// 79 Devuelve la version de la placa CPU
+#define Get_NserieAD			0x51	// 81 Get número de serie placa CPU y Fecha
+#define Guardar_tara    		0x53    /* 83 Grabar taras en Flash A/D */
+#define Estado          		0x55    /* 85 Estado de la máquina */
+#define Asig_Salida     		0x56    /* 86 Asigna el tamanio correspondiente la salida */
+#define Asig_Etiq       		0x57    /* 87 Asigna el tamanio a etiquetar */
+#define Pido_Curvas     		0x5F    /* 95 Pido los datos de las curvas */
+
+/****************************************************************************
+          Definicion del teclado de 20 Teclas
+*****************************************************************************/
+#define Tipo_Teclado 			1			// = 0 --> Teclado de 16 teclas
+											// = 1 --> Teclado de 20 teclas
+#if (Tipo_Teclado != 0)
+	#define	CERO           		0
+    #define	UNO            		1
+    #define	DOS            		2
+    #define	TRES           		3
+    #define	CUATRO         		4
+    #define	CINCO          		5
+    #define	SEIS           		6
+    #define	SIETE          		7
+    #define	OCHO           		8
+    #define	NUEVE				9
+
+    #define	Cursor_Right		15
+    #define	Cursor_Left			12
+    #define	Cursor_Up			13		//11
+    #define	Cursor_Down			23		//20
+    #define	Enter				19		//10
+    #define	Esca				24		//16
+
+    #define	F1				25
+    #define	F2				26
+    #define	Num				61		//17
+    #define	Aste			30		//21
+
+
+/*
+#define		CERO		0 //18		//					Matriz del Teclado
+#define		UNO			1 //13  	//		 C0       C1         C2        C3         C4
+#define		DOS			2 //8 		//		 	 |          |         |          |         |
+#define		TRES		3 //4   	//	  Up ( 1)| Left ( 5)|ENTER(10)| Right(15)| Down(20)|
+#define		CUATRO		4 //12  	//	F0 -----------------------------------------------------
+#define		CINCO		5 //7   	//	         |          |         |          |         |
+#define		SEIS		6 //3 		//	    9( 2)|     8( 6)|    7(11)|Borrar(16)|Print(21)|
+#define		SIETE		7 //11  	//	F1 -----------------------------------------------------
+#define		OCHO		8 //6   	//	         |          |         |          |         |
+#define		NUEVE		9 //2   	//	    6( 3)|     5( 7)|    4(12)| Clave(17)| Mano(22)|
+                          			//	F2 -----------------------------------------------------
+#define		Cursor_Right15         		         |          |         |          |         |
+#define		Cursor_Left	12 //5		//	    3( 4)|     2( 8)|    1(13)|     0(18)| Cero(23)|
+#define		Cursor_Up	11 //1 		//	F3 -----------------------------------------------------
+#define		Cursor_Down	20 			//           |          |         |          |         |
+
+#define		Enter		10 			//
+#define		F2			16 			//
+									//
+#define		Esca			22			//
+#define		Num			23			//
+#define		F1			17			//
+#define		Aste		21			//
+*/
+#else
+/****************************************************************************
+			 Definicion del teclado de 16 Teclas Tipo LN-C
+*****************************************************************************/
+	#define	CERO           	0
+    #define	UNO            	1
+    #define	DOS            	2
+    #define	TRES           	3
+    #define	CUATRO         	4
+    #define	CINCO          	5
+    #define	SEIS           	6
+    #define	SIETE          	7
+    #define	OCHO           	8
+    #define	NUEVE			9
+
+	#define	Enter			20
+	#define	TL 				20
+    #define	Clear_tec		19
+    #define	Tara_T			22
+    #define	Zero			21
+    #define	Mas				18
+    #define	Prt				18
+    #define	AD 				17
+
+/****************************************************************************
+			Conexionado del teclado LN-C 16 teclas
+****************************************************************************
+    			Posicion   		 0	  1	   2	3	 4	  5     6	  7	   8	9
+    const uint8_t Mapeo[20] = { 20,  22,   7,   3,  18,  19,    6,    2,  17,   9,
+    							 5,   1,  21,   8,   4,   0,  255,  255, 255, 255};
+
+
+                                                    Matriz del Teclado
+                                                   3     2     1     0
+                                                   |     |     |     |
+        Conector        		                  Z|   AD|    +|   TL|
+          LN-C           		              0 ----------------------
+           1  --------->    1                      |     |     |     |
+           2  --------->    2                     8|    9|    C|    T|
+           3  --------->    3                 1 ----------------------
+           4  --------->    4                      |     |     |     |
+           5  --------->    5                     4|    5|    6|    7|
+           6  --------->    6                 2 ----------------------
+           7  --------->    7                      |     |     |     |
+           8  --------->    8                     0|    1|    2|    3|
+           9 ---------->   ---                3 ----------------------
+                                                   |     |     |     |
+
+         /-------------------------\
+         | Z  1  2  3  4  5  +  AD  |
+         |                           > Teclado LN-C
+         | T  6  7  8  9  0  C  TL  |
+         \-------------------------/
+
+**/
+#endif
