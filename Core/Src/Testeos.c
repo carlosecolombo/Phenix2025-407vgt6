@@ -105,7 +105,7 @@ void Modo_Testeos(void)
 	{
 int8_t Caracter[2] = {0};
 
-	HAL_UART_Receive_IT  (&huart1, &RxDato1, 1);	// Recibo la PC por Interrupciones
+//	HAL_UART_Receive_IT  (&huart1, &RxDato1, 1);	// Recibo la PC por Interrupciones
 	HAL_UART_Receive_IT  (&huart6, &RxDato6, 1);	// Recibo las Placas de salida  por Interrupciones
 	HAL_UART_Receive_IT  (&huart4, &RxDato5, 1);	// Recibo el módulo ECP8266
 

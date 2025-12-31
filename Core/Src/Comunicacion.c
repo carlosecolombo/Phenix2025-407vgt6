@@ -694,17 +694,10 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size)
 	{
     if (huart->Instance == huart1.Instance)
         {
-        Flag_Rx_DMA_PC = true;     // evento: hay frame recibido
-        RxDataLen_PC   = Size;     // largo real recibido (uint16_t)
+        Flag_Rx_DMA_PC = true;     					// evento: hay frame recibido
+        RxDataLen_PC   = Size;     					// largo real recibido (uint16_t)
         }   
-/*
-	if (huart->Instance == huart1.Instance)
-		{
-		 Flag_Rx_DMA_PC = true;						// Recibi un string
-		 RxDataLen_PC = Size;						// Largo del string recibido
-		 Flag_Rec_PC = true;
-		}
-*/
+
 	else if (huart->Instance == huart6.Instance)	// Recepción de las Placas de salida
 		{
 		 RxDataLen_Sal = Size;						// Largo del string recibido
@@ -746,23 +739,6 @@ void StartReceivingUART_DMA_PC(void)
         }
 
     __HAL_DMA_DISABLE_IT(huart1.hdmarx, DMA_IT_HT);
-
-/*	Flag_Rx_DMA_PC = false;
-	Clr_Buffer((uint8_t *)RxBuffer_PC_DMA, Buffer_Rx);		//  Borro el buffer de recepción
-	if(Flag_Rec_PC == true)
-		{
-		Flag_Rec_PC = false;
-		if (HAL_UARTEx_ReceiveToIdle_DMA(&huart1, RxBuffer_PC_DMA, Buffer_Rx) != HAL_OK)
-			{
-			Clr_LCD();													 Borro el LCD 
-			Print_LCD(0,0,(int8_t *) "    Phenix  2025    ");
-			Print_LCD(0,1,(int8_t *) "   ERROR  DMA  PC   ");
-			Error_Handler(); 							// Manejo de errores si la inicialización de la recepción falla
-			}
-		}
-    // Esto asegura que solo te interrumpa cuando el paquete termina o el buffer se llena.
-    __HAL_DMA_DISABLE_IT(huart1.hdmarx, DMA_IT_HT);
- */   
 	}
 
 static uint8_t PC_TX_Send_DMA(uint8_t *buf, uint16_t len)
