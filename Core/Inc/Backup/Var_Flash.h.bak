@@ -3,12 +3,12 @@
 ---------------------------------------------------------------------------------------------------------*/
 /*
     Fecha inicialización	:	28/06/2025
-	Fecha actualización 	:	13/07/2025
+	Fecha actualización 	:	26/12/2025
 	Realizado por	    	:	C.E. Colombo
 	Compilador utilizado	:	ST - Eclipse IDE
 	Proyecto	    		:	Phenix 2025 - 407VGT6
 	Archivo		    		: 	Var_Flash.c
-	Versión					:	1.00.00
+	Versión					:	3.00.00
 	Objetivo				:	Definicion de variables en memoria Flash
 
 	Definiciones generales de las distintas variables grabadas en memoria Flash
@@ -82,6 +82,8 @@
 
 	extern struct Comunicacion_conf __attribute__((__section__(".user_data_flash")))	Comu_Conf_FL[3];// Configuración Gral de las series   16 * 3 Bytes
 	extern struct Config_Maquina	__attribute__((__section__(".user_data_flash")))	Config_FL;		// Configuración de Máquina			  126 Bytes
+	extern uint16_t	__attribute__((__section__(".user_data_flash")))	Cero_CH_FL[8];			// Cero en cuentas de cada canal
+	extern uint32_t	__attribute__((__section__(".user_data_flash")))	Coeficiente_CH_FL[8];	// Coeficiente de cada canal
 	extern uint16_t __attribute__((__section__(".user_data_flash")))		Fin_Ram_Flash_FL;	// Final de grabación
 #else						// Variables propias
 	uint16_t 		__attribute__((__section__(".user_data_flash")))	Firma_FL;			// Firma Flash
@@ -95,5 +97,7 @@
 
 	struct Comunicacion_conf __attribute__((__section__(".user_data_flash")))	Comu_Conf_FL[3];// Configuración Gral de las series   16 * 3 Bytes
 	struct Config_Maquina	 __attribute__((__section__(".user_data_flash")))	Config_FL;	// Configuración de Máquina				  126 Bytes
+	uint16_t __attribute__((__section__(".user_data_flash")))	Cero_CH_FL[8];			// Cero en cuentas de cada canal
+	uint32_t __attribute__((__section__(".user_data_flash")))	Coeficiente_CH_FL[8];	// Coeficiente de cada canal
 	uint16_t __attribute__((__section__(".user_data_flash")))	Fin_Ram_Flash_FL;			// Final de grabación
 #endif

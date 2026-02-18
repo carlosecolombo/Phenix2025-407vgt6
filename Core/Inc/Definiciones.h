@@ -2,12 +2,12 @@
 				DEFINICIONES GENERALES Y CONSTANTES
 -----------------------------------------------------------------------------
    	Fecha inicialización	:	28/06/2025
-	Fecha actualización 	:	22/12/2025
+	Fecha actualización 	:	02/02/2026
 	Realizado por	    	:	C.E. Colombo
 	Compilador utilizado	:	ST - Eclipse IDE
 	Proyecto	    		:	Phenix 2025 - 407VGT6
 	Archivo		    		: 	Definiciones.h
-	Versión	   	    		:	3.00.00
+	Versión	   	    		:	4.10.00
 	Objetivo	    		:	Definiciones generales y constantes
 */
 #define FLASH_USER_START_ADDR   			ADDR_FLASH_SECTOR_11   	// Start @ of user Flash area para variables Generales
@@ -28,13 +28,13 @@
 
 /* Definiciones generales de las distintas variables */
 
-#define Firma_ASE_Def			"PHENIX 2025 VER.3.00"
-#define Firma_Tam				"*CARLOSASEVER-*3.00*"	/* No debe superar los 20 caracteres */
-#define Version_Tam				"*VER 3.00 - 20251222"
-#define Version_Int				202512223.00
-#define Version_Int1			"Ver.3-2025*Rev 00   "
+#define Firma_ASE_Def			"PHENIX 2025 VER.4.50"
+#define Firma_Tam				"*CARLOSASEVER-*4.50*"	/* No debe superar los 20 caracteres */
+#define Version_Tam				"*VER 4.50 - 20260202"
+#define Version_Int				202512223.10
+#define Version_Int1			"Ver.4-2026*Rev 50   "
 //#define Firma_Def				0x5AA5					/* Firma numérica para verificar la Flash Grabada */
-#define Firma_Def				0x5AA5					/* Firma numérica para verificar la Flash Grabada */
+#define Firma_Def				0x5A5A					/* Firma numérica para verificar la Flash Grabada */
 #define MAXCOLA 				20          			/* máxima cantidad de teclas en la cola */
 #define sin_tecla				-1						/* no hay tecla disponible en el buffer */
 #define FREE					-1          			// hay lugar libre, cola teclado vacia
@@ -59,16 +59,18 @@
  * Definiciones de constantes para la medicion del peso
  */
 
-#define Limite_cero				5000					// Limite maximo del cero en cuentas durante la calibracion = $1F4 = 500 (Tomando como valor maximo 8192 cuentas = 13bits)
+#define Limite_cero				2000				    // Limite maximo del cero en cuentas durante la calibracion = $1F4 = 500 (Tomando como valor maximo 8192 cuentas = 13bits)
 #define Div_Min					1						// Division minima de la maquina = 1
 #define Cnt_Div					1000					// Cantidad de divisiones de la maquina
 #define Capacidad_Maxima		1000					// Capacidad Maxima = Div_Min * Cnt_Div (no se modifica por configuracion desde la PC)
 #define Divisor					4						// Divisor para calcular el coeficiente de correccion de peso
 #define Cant_Med_Cal			200000					// Cantidad de Mediciones durante la calibracion
+#define Cant_Med_Cero			20000					// Cantidad de Mediciones de cero al entrar a Ver Cuentas
 #define Cero_ini				1000					// Valor inicial del cero si nunca se calibro la maquina
 #define Coeficiente_ini			150000					// Valor inicial del coeficiente si nunca se calibro la maquina
 #define Correcion_cero			200						// Valor limite de la diferencia entre el Peso Bruto y la Tara para hacer la correcion del cero
-
+#define Peso_patron_prueba		300						// Peso patron para probar calibracion
+#define Peso_Minimo				40						// si es menor es platillo vacio
 
 #define Numero_CPU_ASCII		"0000001"				// 7 int8_t Numero de serie de la CPU
 #define Nodo_def				"81"					// 2 int8_t Numero de Nodo
@@ -76,9 +78,9 @@
 #define Pal_ClaveF_def			"538853"				// 6 int8_t Password inicial fábrica
 #define Pal_Clave_def			"123456"				// 6 int8_t Password inicial
 #define Nombre_CPU     			"ST-407 Phenix"			// 13 int8_t
-#define Vers_CPU       			"Ver. 2.20"				//  9 int8_t
+#define Vers_CPU       			"Ver. 4.50"				//  9 int8_t
 #define Fabricante  			"C.E.Colombo"			// 11 int8_t
-#define Fecha_Inicial			"09/10/25"
+#define Fecha_Inicial			"02/02/26"
 #define NumeroMagico			0x32F1					// Número para que el RTC sepa si debe inicializarse
 
 #define MaxLineasASCII       		"8"    				// Máxima cantidad de lÌneas
@@ -160,6 +162,7 @@
 #define Buffer_Rx_Sal			50						// Largo del buffer de recepción Placas Salida
 #define Buffer_Tx_Sal			50						// Largo del buffer de transmisión Placas Salida
 #define PUNTERO_TX_MAX          8
+#define Frame_Oscilos			103						// Tamaño del frame en el modo osciloscopio
 
 #define STX     				0x02
 #define ETX     				0x03

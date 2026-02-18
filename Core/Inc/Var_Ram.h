@@ -124,15 +124,17 @@ extern uint16_t Fin_Ram_CCM __attribute__((__section__(".ccmram")));            
 /**------------------------------------------------------------------------------------------------------------------------
             VARIABLES DE INTERRUPCIONES DE ENTRADAS RELACIONADAS CON LA MEDICION Y PROCESAMIENTO DEL PESO
 --------------------------------------------------------------------------------------------------------------------------*/
-extern uint_fast16_t Canal_AD[8][250] __attribute__((__section__(".ccmram")));               // Canal medido por al AD
-extern volatile uint_fast16_t Canal_AD_check[8][50] __attribute__((__section__(".ccmram"))); // Canal medido por al AD
-extern uint_fast32_t Peso_Bruto_CH[8] __attribute__((__section__(".ccmram")));               // Peso Bruto en cuentas de cada canal
-extern int_fast32_t Peso_Neto_CH[8] __attribute__((__section__(".ccmram")));                 // Peso Neto en cuentas de cada canal
-extern volatile uint_fast64_t Suma_Canal_AD[8] __attribute__((__section__(".ccmram")));      // Suma acumulada de mediciones por canal del AD
-extern volatile uint_fast32_t Cantidad_Mediciones __attribute__((__section__(".ccmram")));   // Cantidad de mediciones realizadas
-extern uint_fast16_t Tara[8][500] __attribute__((__section__(".ccmram")));                   // Taras de toda la maquina (8 lineas x 500 platillos)
-extern volatile uint_fast16_t Velocidad_medida __attribute__((__section__(".ccmram")));      // Velocidad de la maquina, Cantidad de frutos por seg.
-extern volatile uint_fast32_t Chk_Coeficiente __attribute__((__section__(".ccmram")));       // Chequeo del coeficiente de correcion de peso
+extern	volatile uint_fast16_t	Canal_AD[8][225]		__attribute__((__section__(".ccmram")));	// Canal medido por al AD
+extern  volatile uint_fast16_t	Canal_AD_check[8][50]	__attribute__((__section__(".ccmram")));	// Canal medido por al AD
+extern  volatile uint_fast16_t	Peso_CH					__attribute__((__section__(".ccmram")));	// Canal medido por al AD
+extern  volatile uint_fast32_t	Peso_Bruto_CH[8]		__attribute__((__section__(".ccmram")));	// Peso Bruto en cuentas de cada canal
+extern  volatile int_fast32_t	Peso_Neto_CH[8]			__attribute__((__section__(".ccmram")));	// Peso Neto en cuentas de cada canal
+extern  volatile uint_fast64_t Suma_Canal_AD[8] __attribute__((__section__(".ccmram")));      // Suma acumulada de mediciones por canal del AD
+extern	volatile uint_fast32_t	Cantidad_Mediciones		__attribute__((__section__(".ccmram")));	// Cantidad de mediciones realizadas
+extern  volatile uint8_t	contador_mediciones			__attribute__((__section__(".ccmram")));	// Contador de mediciones en el modo osciloscopio
+extern  volatile uint_fast16_t	Tara[8][500]			__attribute__((__section__(".ccmram")));	// Taras de toda la maquina (8 lineas x 500 platillos)
+extern  volatile uint_fast16_t Velocidad_medida __attribute__((__section__(".ccmram")));      // Velocidad de la maquina, Cantidad de frutos por seg.
+extern  uint_fast32_t	Chk_Coeficiente		__attribute__((__section__(".ccmram")));	// Chequeo del coeficiente de correcion de peso
 extern volatile int_fast8_t State __attribute__((__section__(".ccmram")));                   // Flag para medir velocidad
 extern volatile int_fast16_t Conta_Velo __attribute__((__section__(".ccmram")));             // Contador tiempo para calcular la velocidad en mseg.
 extern volatile int_fast16_t Conta_Velo_Maq __attribute__((__section__(".ccmram")));         // Contador tiempo para calcular la velocidad en mseg.
@@ -149,10 +151,10 @@ extern volatile int_fast8_t Flag_Sinc_eje __attribute__((__section__(".ccmram"))
 extern volatile int_fast8_t Flag_Secuencia __attribute__((__section__(".ccmram")));    // Secuencia de pulsos correcta
 extern volatile int_fast8_t Flag_SecuenEje __attribute__((__section__(".ccmram")));    // Secuencia de pulsos correcta
 extern volatile int_fast8_t Flag_SecuEje1 __attribute__((__section__(".ccmram")));     // Secuencia de pulsos correcta
-extern volatile int_fast8_t Flag_Convert_ON __attribute__((__section__(".ccmram")));   // Se mandó a convertir
 extern volatile int_fast8_t Flag_Conv_FIN __attribute__((__section__(".ccmram")));     // Finalizó conversión
 extern volatile int_fast8_t Flag_Ver_Cuentas __attribute__((__section__(".ccmram")));  // Modo ver cuentas
 extern volatile int_fast8_t Flag_Osciloscopio __attribute__((__section__(".ccmram"))); // Modo osciloscopio
+extern	volatile int_fast8_t	Flag_Oscilos_Start	__attribute__((__section__(".ccmram")));	// Comienzo osciloscopio
 extern volatile int_fast8_t Flag_Oscilos_End __attribute__((__section__(".ccmram")));  // Fin osciloscopio
 extern volatile int_fast8_t Flag_Tara_OK __attribute__((__section__(".ccmram")));      // Toma de taras OK
 
@@ -161,64 +163,66 @@ extern volatile int_fast8_t Flag_Tara_OK __attribute__((__section__(".ccmram")))
 /***************************************************************...***************************************************************/
 /*	+++			Sector reservado para las configuraciones generales de...kUp_Ram                                                       */
 /***************************************************************...***************************************************************/
-uint16_t Firma_BK __attribute__((__section__(".backup_sram")));                                   // Firma SRAM-CCM
-uint16_t boot_count_Bk __attribute__((__section__(".backup_sram")));                              // 2 bytes el Check Up de la Ram BackUp
+uint16_t Firma_BK 							__attribute__((__section__(".backup_sram")));         // Firma SRAM-CCM
+uint16_t boot_count_Bk 						__attribute__((__section__(".backup_sram")));         // 2 bytes el Check Up de la Ram BackUp
 int16_t Tabla_Limites_BK[Max_Tamanos][MaxLineas] __attribute__((__section__(".backup_sram")));    // 352 bytes largo. Para calcular los tamaños
 struct reg_Sal E_Salidas_BK[MaxLineas][Max_Tamanos] __attribute__((__section__(".backup_sram"))); // 3168 bytes largo de la estructura
-uint16_t Fin_BK __attribute__((__section__(".backup_sram")));                                     // Fin BackUp Ram
+uint16_t Fin_BK 							__attribute__((__section__(".backup_sram")));         // Fin BackUp Ram
 
 /***************************************************************...***************************************************************/
 /*	+++			Sector reservado para las configuraciones generales de...n SRAM-CCM                                                     */
 /***************************************************************...***************************************************************/
-uint16_t Firma_CCM __attribute__((__section__(".ccmram")));                                   // Firma SRAM-CCM
-uint16_t Numero_Grabacion_CCM __attribute__((__section__(".ccmram")));                        // 2 bytes el Check Up de la Ram BackUp
-int16_t Tabla_Limites_CCM[Max_Tamanos][MaxLineas] __attribute__((__section__(".ccmram")));    // 352 bytes largo. Para calcular los tamaños
-struct reg_Sal E_Salidas_CCM[MaxLineas][Max_Tamanos] __attribute__((__section__(".ccmram"))); // 3168 bytes largo de la estructura
-uint16_t Fin_BK_CCM __attribute__((__section__(".ccmram")));                                  // Fin SRAM-CCM = BackUp Ram
+uint16_t Firma_CCM 							__attribute__((__section__(".ccmram")));                                   // Firma SRAM-CCM
+uint16_t Numero_Grabacion_CCM 				__attribute__((__section__(".ccmram")));          	// 2 bytes el Check Up de la Ram BackUp
+int16_t Tabla_Limites_CCM[Max_Tamanos][MaxLineas] __attribute__((__section__(".ccmram")));    	// 352 bytes largo. Para calcular los tamaños
+struct reg_Sal E_Salidas_CCM[MaxLineas][Max_Tamanos] __attribute__((__section__(".ccmram"))); 	// 3168 bytes largo de la estructura
+uint16_t Fin_BK_CCM 						__attribute__((__section__(".ccmram")));                                  // Fin SRAM-CCM = BackUp Ram
 
 int16_t E_Etiqueta_CCM[MaxEtiqueta][MaxLineas][Max_Tamanos] __attribute__((__section__(".ccmram"))); // 704 bytes
-int8_t FirmaASE_CCM[22] __attribute__((__section__(".ccmram")));                                     // Firma del equipo
+int8_t FirmaASE_CCM[22]						__attribute__((__section__(".ccmram")));                                     // Firma del equipo
 
-struct Comunicacion_conf Comu_Conf[3] __attribute__((__section__(".ccmram"))); // Configuración Gral de las series
-struct Config_Maquina Config __attribute__((__section__(".ccmram")));          // Configuración de Máquina
-uint16_t Cero_CH_CCM[8] __attribute__((__section__(".ccmram")));               // Cero en cuentas de cada canal
-uint32_t Coeficiente_CH_CCM[8] __attribute__((__section__(".ccmram")));        // Coeficiente de cada canal
-uint16_t Fin_Ram_CCM __attribute__((__section__(".ccmram")));                  // Final de grabación
+struct Comunicacion_conf Comu_Conf[3] 		__attribute__((__section__(".ccmram"))); 			// Configuración Gral de las series
+struct Config_Maquina Config 				__attribute__((__section__(".ccmram")));          	// Configuración de Máquina
+uint16_t Cero_CH_CCM[8] 					__attribute__((__section__(".ccmram")));            // Cero en cuentas de cada canal
+uint32_t Coeficiente_CH_CCM[8] 				__attribute__((__section__(".ccmram")));        	// Coeficiente de cada canal
+uint16_t Fin_Ram_CCM 						__attribute__((__section__(".ccmram")));            // Final de grabación
 
 /**------------------------------------------------------------------------------------------------------------------------
             VARIABLES DE INTERRUPCIONES DE ENTRADAS RELACIONADAS CON LA MEDICION Y PROCESAMIENTO DEL PESO
 --------------------------------------------------------------------------------------------------------------------------*/
-uint_fast16_t Canal_AD[8][250] __attribute__((__section__(".ccmram")));               // Canal medido por al AD
-volatile uint_fast16_t Canal_AD_check[8][50] __attribute__((__section__(".ccmram"))); // Canal medido por al AD
-uint_fast32_t Peso_Bruto_CH[8] __attribute__((__section__(".ccmram")));               // Peso Bruto en cuentas de cada canal
-int_fast32_t Peso_Neto_CH[8] __attribute__((__section__(".ccmram")));                 // Peso Neto en cuentas de cada canal
-volatile uint_fast64_t Suma_Canal_AD[8] __attribute__((__section__(".ccmram")));      // Suma acumulada de mediciones por canal del AD
-volatile uint_fast32_t Cantidad_Mediciones __attribute__((__section__(".ccmram")));   // Cantidad de mediciones realizadas
-uint_fast16_t Tara[8][500] __attribute__((__section__(".ccmram")));                   // Taras de toda la maquina (8 lineas x 500 platillos)
-volatile uint_fast16_t Velocidad_medida __attribute__((__section__(".ccmram")));      // Velocidad de la maquina, Cantidad de frutos por seg.
-volatile uint_fast32_t Chk_Coeficiente __attribute__((__section__(".ccmram")));       // Chequeo del coeficiente de correcion de peso
-volatile int_fast8_t State __attribute__((__section__(".ccmram")));                   // Flag para medir velocidad
-volatile int_fast16_t Conta_Velo __attribute__((__section__(".ccmram")));             // Contador tiempo para calcular la velocidad en mseg.
-volatile int_fast16_t Conta_Velo_Maq __attribute__((__section__(".ccmram")));         // Contador tiempo para calcular la velocidad en mseg.
-volatile int_fast16_t Conta_Sincro __attribute__((__section__(".ccmram")));           // Contador de los pulsos de sincronismo
-volatile int_fast16_t Conta_Ejes __attribute__((__section__(".ccmram")));             // Contador de platos o ejes
-volatile int_fast16_t Cant_Ejes_Med __attribute__((__section__(".ccmram")));          // Cantidad de Ejes medidos
-volatile int_fast16_t Cant_Pulsos_Med __attribute__((__section__(".ccmram")));        // Cantidad de Pulsos recibidos del encoder
-volatile uint_fast8_t Aux_celda __attribute__((__section__(".ccmram")));              // Auxiliar para guardar celda a calibrar/ver cuentas
-volatile uint16_t Cant_Pulsos __attribute__((__section__(".ccmram")));                // Cantidad de pulsos a medir en modo osciloscopio
+volatile uint_fast16_t	Canal_AD[8][225]	__attribute__((__section__(".ccmram")));			// Canal medido por al AD
+volatile uint_fast16_t  Canal_AD_check[8][50] __attribute__((__section__(".ccmram"))); 			// Canal medido por al AD
+volatile uint_fast16_t	Peso_CH				__attribute__((__section__(".ccmram")));			// Canal medido por al AD
+volatile uint_fast32_t	Peso_Bruto_CH[8]	__attribute__((__section__(".ccmram")));			// Peso Bruto en cuentas de cada canal
+volatile int_fast32_t	Peso_Neto_CH[8]		__attribute__((__section__(".ccmram")));			// Peso Neto en cuentas de cada canal
+volatile uint_fast64_t  Suma_Canal_AD[8] 	__attribute__((__section__(".ccmram")));     		// Suma acumulada de mediciones por canal del AD
+volatile uint_fast32_t  Cantidad_Mediciones __attribute__((__section__(".ccmram")));   			// Cantidad de mediciones realizadas
+volatile uint8_t	    contador_mediciones	__attribute__((__section__(".ccmram")));			// Contador de mediciones en el modo osciloscopio
+volatile uint_fast16_t	Tara[8][500]		__attribute__((__section__(".ccmram")));			// Taras de toda la maquina (8 lineas x 500 platillos)
+volatile uint_fast16_t  Velocidad_medida 	__attribute__((__section__(".ccmram")));      		// Velocidad de la maquina, Cantidad de frutos por seg.
+		 uint_fast32_t	Chk_Coeficiente		__attribute__((__section__(".ccmram")));			// Chequeo del coeficiente de correcion de peso
+volatile int_fast8_t    State 				__attribute__((__section__(".ccmram")));            // Flag para medir velocidad
+volatile int_fast16_t   Conta_Velo 			__attribute__((__section__(".ccmram")));            // Contador tiempo para calcular la velocidad en mseg.
+volatile int_fast16_t   Conta_Velo_Maq		__attribute__((__section__(".ccmram")));         	// Contador tiempo para calcular la velocidad en mseg.
+volatile int_fast16_t	Conta_Sincro		__attribute__((__section__(".ccmram")));			// Contador de los pulsos de sincronismo fino
+volatile int_fast16_t   Conta_Ejes 			__attribute__((__section__(".ccmram")));            // Contador de platos o ejes
+volatile int_fast16_t   Cant_Ejes_Med 		__attribute__((__section__(".ccmram")));          	// Cantidad de Ejes medidos
+volatile int_fast16_t   Cant_Pulsos_Med 	__attribute__((__section__(".ccmram")));       	 	// Cantidad de Pulsos recibidos del encoder
+volatile uint_fast8_t   Aux_celda 			__attribute__((__section__(".ccmram")));            // Auxiliar para guardar celda a calibrar/ver cuentas
+volatile uint16_t       Cant_Pulsos			__attribute__((__section__(".ccmram")));            // Cantidad de pulsos a medir en modo osciloscopio
 
-volatile int_fast8_t Flag_Maq_Enable __attribute__((__section__(".ccmram")));   // Maquina habilitada
-volatile int_fast8_t Flag_Maq_Fun __attribute__((__section__(".ccmram")));      // Maquina en funcionamiento
-volatile int_fast8_t Flag_Sinc_eje __attribute__((__section__(".ccmram")));     // Flag para comenzar a contar pulsos
-volatile int_fast8_t Flag_Secuencia __attribute__((__section__(".ccmram")));    // Secuencia de pulsos correcta
-volatile int_fast8_t Flag_SecuenEje __attribute__((__section__(".ccmram")));    // Secuencia de pulsos correcta
-volatile int_fast8_t Flag_SecuEje1 __attribute__((__section__(".ccmram")));     // Secuencia de pulsos correcta
-volatile int_fast8_t Flag_Convert_ON __attribute__((__section__(".ccmram")));   // Se mandó a convertir
-volatile int_fast8_t Flag_Conv_FIN __attribute__((__section__(".ccmram")));     // Finalizó conversión
-volatile int_fast8_t Flag_Ver_Cuentas __attribute__((__section__(".ccmram")));  // Modo ver cuentas
-volatile int_fast8_t Flag_Osciloscopio __attribute__((__section__(".ccmram"))); // Modo osciloscopio
-volatile int_fast8_t Flag_Oscilos_End __attribute__((__section__(".ccmram")));  // Fin osciloscopio
-volatile int_fast8_t Flag_Tara_OK __attribute__((__section__(".ccmram")));      // Toma de taras OK
+volatile int_fast8_t Flag_Maq_Enable		__attribute__((__section__(".ccmram")));   			// Maquina habilitada
+volatile int_fast8_t Flag_Maq_Fun		 	__attribute__((__section__(".ccmram")));      		// Maquina en funcionamiento
+volatile int_fast8_t Flag_Sinc_eje 			__attribute__((__section__(".ccmram")));     		// Flag para comenzar a contar pulsos
+volatile int_fast8_t Flag_Secuencia 		__attribute__((__section__(".ccmram")));    		// Secuencia de pulsos correcta
+volatile int_fast8_t Flag_SecuenEje		 	__attribute__((__section__(".ccmram")));    		// Secuencia de pulsos correcta
+volatile int_fast8_t Flag_SecuEje1 			__attribute__((__section__(".ccmram")));     		// Secuencia de pulsos correcta
+volatile int_fast8_t Flag_Conv_FIN 			__attribute__((__section__(".ccmram")));     		// Finalizó conversión
+volatile int_fast8_t Flag_Ver_Cuentas 		__attribute__((__section__(".ccmram")));  			// Modo ver cuentas
+volatile int_fast8_t Flag_Osciloscopio 		__attribute__((__section__(".ccmram"))); 			// Modo osciloscopio
+volatile int_fast8_t Flag_Oscilos_Start		__attribute__((__section__(".ccmram")));			// Comienzo osciloscopio
+volatile int_fast8_t Flag_Oscilos_End 		__attribute__((__section__(".ccmram")));  			// Fin osciloscopio
+volatile int_fast8_t Flag_Tara_OK 			__attribute__((__section__(".ccmram")));      		// Toma de taras OK
 
 #endif
 

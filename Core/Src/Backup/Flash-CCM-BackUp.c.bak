@@ -1,12 +1,12 @@
-/*---------------------------------------------------------------------------
+   /*---------------------------------------------------------------------------
       M A N E J O   M E M O R I A S    F L A S H ,  C C M ,  B A C K U P
 ---------------------------------------------------------------------------*/
 /*	Fecha inicialización	:	23/05/2022
-	Fecha actualización 	:	24/08/2025
+	Fecha actualización 	:	22/12/2025
 	Realizado por			:	C.E. Colombo
 	Compilador utilizado	:	ST - Eclipse IDE
 	Proyecto	    		:	Phenix 2025
-	Versión					:	2.00
+	Versión					:	3.00
 	Objetivo				:	Rutinas de manejo de las Memorias
 */
 #define  PosVariables   1   /*   	0 = Variables propias
@@ -19,12 +19,12 @@
 #include <string.h>
 
 extern void Print_LCD(uint8_t col, uint8_t fila, int8_t *cadena);
-extern void   	Clr_LCD(void);
+extern void Clr_LCD(void);
 
 /*Variable used for Erase procedure*/
 FLASH_EraseInitTypeDef EraseInitStruct;
 
-void Init_Variables_Config(int8_t Inicializacion);
+void Init_Variables_Config(void);
 void write_Pagina(void);					// Graba los datos de la Ram CCM en la Flask
 void Grabo_Def_to_FL(void);					// Carga las definiciones originales en la Ram CCM y los guarda en la Flash
 void Grabo_FL_to_CCM(void);					// Pasa los datos de la Flash  a la Ram CCM
@@ -88,7 +88,7 @@ void write_Pagina(void)
 	Start_Address_Ram   = RAM_CCM_START_ADDR;			// Comienzo de la Ram a guardar
 	Start_Address_Flash = FLASH_USER_START_ADDR;		// Comienzo de la Flash a grabar
 
-	FLASH_USER_END_ADDR = Start_Address_Flash + 0x1FFF;	// Fin de la Flash a grabar
+	FLASH_USER_END_ADDR = Start_Address_Flash +  0x1FFF;	// Fin de la Flash a grabar
 
 	while(Start_Address_Flash < FLASH_USER_END_ADDR)
 		{
@@ -153,15 +153,21 @@ void write_Pagina(void)
 	}
 
 /*----------------------------------------------------------------------------
-*  Rutina 		: void init_Variables_Config(int8_t Inicializacion)
+*  Rutina 		: void init_Variables_Config(void)
 *  Objetivo 	: Inicialización general de las variables de configuración
 *  					guardadas en Flash
 *  Entrada  	:
 *  Descripcion 	:	Los valores por defecto se definen en Definiciones.h
+*  					Al llamar a la funcion se pasa el parametro TRUE o FALSE
+*  					TRUE: graba en FLASH los valores de las variables almacenados en RAM
+*  					FALSE: lee de la FLASH los valores y los almacena en RAM
 *
 */
-void Init_Variables_Config(int8_t Inicializacion)
+void Init_Variables_Config(void)
 	{
+	int8_t  i;
+	int16_t j;
+
 	Print_LCD(15,2,(int8_t *) "Grab");
 	Time_Out_G = 500;						// pongo el Time Out en 0,5 seg
 	Flag_Grabo = true;						// Activo el flag para activar el parpadeo
@@ -194,6 +200,16 @@ void Init_Variables_Config(int8_t Inicializacion)
 	while(Time_Out_G > 0);					// Espero para ver
 	Flag_Grabo = false;						// Desactivo el flag para activar el parpadeo
 	Time_Parpadeo = 80;
+
+/*		INICIALIZO las taras con el cero de calibración    */
+	for(i = 0; i < 8; i++)
+    	{
+    	for(j = 0; j < 500; j++ )
+    		{
+    		Tara[i][j] = Cero_CH_CCM[i];		// Inicializa el sector de variables de las Taras de los platillos
+    		}
+    	}
+
 	}
 
 /*----------------------------------------------------------------------------
@@ -220,6 +236,7 @@ void   Grabo_Def_to_FL(void)
 		*(uint8_t*)Limpio_Ram = Null;
 		Limpio_Ram++;
 		}
+
 	strcpy((char *)FirmaASE_CCM,(const char *) Firma_ASE_Def);	// Copio el dato de la firma
 	Firma_CCM = Firma_Def;					// Firma numérica
 											//	Coeficientes de las mediciones de Tensión
@@ -266,7 +283,7 @@ void   Grabo_Def_to_FL(void)
 	Config.Enable_AD = EnableAD;
 	Config.Disable_AD = DisableAD;
 
-	for(x = 0; x <= Salidas ; x++)
+	for(x = 0; x < Salidas ; x++)
 		{
 		Config.DisBox[x] = (x * 2) + 5;								// Distancias entre la celda y las salidas
 		Tot_Frut_Salidas[x] = 0;									// borro los totalizadores de salidas
@@ -315,6 +332,19 @@ void   Grabo_Def_to_FL(void)
             }
         }
 
+	// Inicializo el cero de la calibracion
+	for(x = 0; x < 8; x++)
+		{
+		Cero_CH_CCM[x] = Cero_ini;
+		}
+
+	// Inicializo el coeficiente de la calibracion
+	for(x = 0; x < 8; x++)
+		{
+		Coeficiente_CH_CCM[x] = Coeficiente_ini;
+		}
+
+
 	Fin_Ram_CCM = 123;
 	Numero_Grabacion_CCM = 1;
 	write_Pagina();								// Graba en FLASH los valores Iniciales de la CCM
@@ -323,7 +353,7 @@ void   Grabo_Def_to_FL(void)
 
 /************************************************************************/
 /* Rutina   	: Grabo_FL_to_CCM
-*  Objetivo 	: copio los datos de Flash a la Ram CCM y a la Ram BackUp
+*  Objetivo 	: copio los datos de Flash a la Ram CCM
 *  Entrada  	:
 *  Descripcion 	:
 *
@@ -361,7 +391,7 @@ void Grabo_FL_to_CCM(void)
 	strcpy((char *)Config.Nodo,(const char *)Config_FL.Nodo);            // Numero de Nodo
 	strcpy((char *)Config.denominacion,(const char *)Config_FL.denominacion); // Nombre de la placa CPU
 	strcpy((char *)Config.n_version,(const char *)Config_FL.n_version);  // Numero de versiÛn de la CPU
-	strcpy((char *)Config.NumDisco,(const char *)Config_FL.NumDisco);    // Número de Disco de la PC
+	strcpy((char *)Config.n_version,(const char *)Vers_CPU);        	// Numero de versiÛn de la CPU
 
 	strcpy((char *)Config.f_instalacion,(const char *)Config_FL.f_instalacion);  	// Fecha de instalacion
 	strcpy((char *)Config.n_lineasASCII,(const char *)Config_FL.n_lineasASCII);  	// Numero de lineas
@@ -372,6 +402,16 @@ void Grabo_FL_to_CCM(void)
 	Config.n_platillos = Config_FL.n_platillos;
 	strcpy((char *)Config.n_etiqueASCII,(const char *)Config_FL.n_etiqueASCII);		// Numero de etiquetadoras
 	Config.n_etique = Config_FL.n_etique;
+	/* Sanity clamp para evitar índices fuera de rango */
+	if (Config.n_lineas < 1) Config.n_lineas = 1;
+	if (Config.n_lineas > MaxLineas) Config.n_lineas = MaxLineas;
+	if (Config.n_salidas < 1) Config.n_salidas = 1;
+	if (Config.n_salidas > Salidas) Config.n_salidas = Salidas;
+	if (Config.n_platillos < 1) Config.n_platillos = 1;
+	if (Config.n_platillos > MaxPlatillos) Config.n_platillos = MaxPlatillos;
+	if (Config.n_etique < 0) Config.n_etique = 0;
+	if (Config.n_etique > MaxEtiqueta) Config.n_etique = MaxEtiqueta;
+
 	strcpy((char *)Config.peso_patron,(const char *)Config_FL.peso_patron);   		// valor del peso patron
 	Config.modo_bandeja = Config_FL.modo_bandeja;                					// Modo Normal sin bandeja "0"
 	strcpy((char *)Config.error_taraASCII,(const char *)Config_FL.error_taraASCII); // Error aceptable de la tara
@@ -381,7 +421,7 @@ void Grabo_FL_to_CCM(void)
 	Config.Enable_AD = Config_FL.Enable_AD;
 	Config.Disable_AD = Config_FL.Disable_AD;
 
-	for(x = 0; x <= Salidas ; x++)
+	for(x = 0; x < Salidas ; x++)
 		{
 		Config.DisBox[x] = Config_FL.DisBox[x];					// Distancias entre la celda y las salidas
 		}
@@ -425,7 +465,7 @@ void Grabo_FL_to_CCM(void)
 		{
 		for(j = 0; j < Max_Tamanos; j++)
 			{
-			Tabla_Limites_BK[j][y] = Tabla_Limites_FL[j][y];			// le cargo una table cualquiera 0, 30, 60,.....660 gr
+			Tabla_Limites_CCM[j][y] = Tabla_Limites_FL[j][y];			// le cargo una table cualquiera 0, 30, 60,.....660 gr
 			}
 		}
 
@@ -435,6 +475,19 @@ void Grabo_FL_to_CCM(void)
 		Tot_Frut_Salidas[x] = 0;
 		}
 	Numero_Grabacion_CCM = Numero_Grabacion_FL;
+
+	// Recupero el cero de la calibracion
+	for(x = 0; x < 8; x++)
+		{
+		Cero_CH_CCM[x] = Cero_CH_FL[x];
+		}
+
+	// Recupero el coeficiente de la calibracion
+	for(x = 0; x < 8; x++)
+		{
+		Coeficiente_CH_CCM[x] = Coeficiente_CH_FL[x];
+		}
+
 	Fin_Ram_CCM = 123;
 
 	}
@@ -509,21 +562,47 @@ void BKPSRAM_Init(void)
 */
 void Grabo_BackUp_to_CCM(void)
 	{
-	uint16_t Indice;
-	uint8_t Dato;
-	uint16_t * Start_Address_Ram;
-	uint16_t * End_Address_Ram;
+    uint8_t x;
+    uint8_t y;
+    uint8_t j;
 
-	Start_Address_Ram = & Firma_CCM; 			// Comienzo de la Ram a grabar
-	End_Address_Ram = & Fin_BK_CCM; 			// Fin de la Ram a grabar
+    /* Habilito acceso a Backup SRAM */
+    HAL_PWR_EnableBkUpAccess();
+    __HAL_RCC_BKPSRAM_CLK_ENABLE();
 
-	Indice = 0;
-	while(Start_Address_Ram < End_Address_Ram)
+    /* Valido firma básica */
+    if (Firma_BK != Firma_Def)
+    {
+        return;
+    }
+
+    /* Sincronizo número de grabación en CCM con el de BK */
+    Numero_Grabacion_CCM = boot_count_Bk;
+
+    /* Copio tablas BK -> CCM */
+    for (x = 0; x < MaxLineas; x++)
+    {
+        for (y = 0; y < Max_Tamanos; y++)
+        {
+            E_Salidas_CCM[x][y].Cant_Boxes     = E_Salidas_BK[x][y].Cant_Boxes;
+            E_Salidas_CCM[x][y].Salida_Actual  = E_Salidas_BK[x][y].Salida_Actual;
+            E_Salidas_CCM[x][y].Puntero        = E_Salidas_BK[x][y].Puntero;
+            E_Salidas_CCM[x][y].Total_frutos   = E_Salidas_BK[x][y].Total_frutos;
+
+            for (j = 0; j < 4; j++)
+            {
+                E_Salidas_CCM[x][y].Sal[j]            = E_Salidas_BK[x][y].Sal[j];
+                E_Salidas_CCM[x][y].Tot_Frutos_Box[j] = E_Salidas_BK[x][y].Tot_Frutos_Box[j];
+            }
+        }
+    }
+
+    for (y = 0; y < Max_Tamanos; y++)
+    {
+        for (x = 0; x < MaxLineas; x++)
 		{
-		Dato = BKPSRAM_Read8(Indice);		// Leo el dato de la BKPSRAM
-		* Start_Address_Ram = Dato;			// Lo guardo en la Ram de trabajo
-	    Indice++;							// Incremento el indice y dirección
-		Start_Address_Ram++;				// donde lo guardo
+            Tabla_Limites_CCM[y][x] = Tabla_Limites_BK[y][x];
+        }
 		}
 	}
 
@@ -537,7 +616,7 @@ void Grabo_BackUp_to_CCM(void)
  *   					el tiempo de ejecución de la rutina es de
  *   		SOLO SE GUARDAN LOS SIGUIENTES DATOS
 	 int16_t  Tabla_Limites[Max_Tamanos][MaxLineas] __attribute__((__section__(".backup_sram")));	 		    // 352 bytes largo. Para calcular los tamaños
-	 struct   reg_Sal  	E_Salidas[MaxLineas][Max_Tamanos] __attribute__((__section__(".backup_sram")));	// 3168 bytes largo de la estructura
+	 struct   reg_Sal  	E_Salidas[MaxLineas][Max_Tamanos] __attribute__((__section__(".backup_sram")));			// 3168 bytes largo de la estructura
 */
 void Write_Ram_BK(void)
 	{

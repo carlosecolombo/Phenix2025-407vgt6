@@ -1,6 +1,11 @@
 {
-    "stm32-for-vscode.openOCDPath": "/Users/carlos/Library/Application Support/Code/User/globalStorage/bmd.stm32-for-vscode/@xpack-dev-tools/openocd/0.12.0-6.1/.content/bin/openocd",
+    "stm32-for-vscode.openOCDPath": "/Users/carlos/Library/Application Support/Code/User/globalStorage/bmd.stm32-for-vscode/@xpack-dev-tools/openocd/0.12.0-7.1/.content/bin/openocd",
     "stm32-for-vscode.armToolchainPath": "/Users/carlos/Library/Application Support/Code/User/globalStorage/bmd.stm32-for-vscode/@xpack-dev-tools/arm-none-eabi-gcc/14.2.1-1.1.1/.content/bin",
     "cortex-debug.armToolchainPath": "/Users/carlos/Library/Application Support/Code/User/globalStorage/bmd.stm32-for-vscode/@xpack-dev-tools/arm-none-eabi-gcc/14.2.1-1.1.1/.content/bin",
-    "cortex-debug.openocdPath": "/Users/carlos/Library/Application Support/Code/User/globalStorage/bmd.stm32-for-vscode/@xpack-dev-tools/openocd/0.12.0-6.1/.content/bin/openocd"
+    "cortex-debug.openocdPath": "/Users/carlos/Library/Application Support/Code/User/globalStorage/bmd.stm32-for-vscode/@xpack-dev-tools/openocd/0.12.0-7.1/.content/bin/openocd",
+    "terminal.integrated.cwd": "${workspaceFolder}",
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "xaver.clang-format",
+    "clang-format.executable": "/opt/homebrew/bin/clang-format",
+    "C_Cpp.clang_format_style": "file"
 }
