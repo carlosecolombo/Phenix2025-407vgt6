@@ -36,10 +36,7 @@ CFLAGS_COMMON = $(MCU) \
 -Wall -Wextra \
 -ffunction-sections -fdata-sections
 
-# Tu código
 CFLAGS_USER = $(CFLAGS_COMMON)
-
-# HAL (silencia unused-parameter)
 CFLAGS_HAL  = $(CFLAGS_COMMON) -Wno-unused-parameter
 
 #######################################
@@ -101,39 +98,37 @@ STARTUP = Core/Startup/startup_stm32f407vgtx.s
 #######################################
 # Objects
 #######################################
-OBJ_CORE = $(CORE_SRC:%.c=$(BUILD_DIR)/%.o)
-OBJ_HAL  = $(HAL_SRC:%.c=$(BUILD_DIR)/%.o)
+OBJ_CORE    = $(CORE_SRC:%.c=$(BUILD_DIR)/%.o)
+OBJ_HAL     = $(HAL_SRC:%.c=$(BUILD_DIR)/%.o)
 OBJ_STARTUP = $(BUILD_DIR)/$(STARTUP:.s=.o)
 
 OBJECTS = $(OBJ_CORE) $(OBJ_HAL) $(OBJ_STARTUP)
 
 #######################################
-# Rules
+# Default rule
 #######################################
-all: check
+all: $(BUILD_DIR)/$(PROJECT).elf
 
-check: $(BUILD_DIR)/$(PROJECT).elf
-
-$(BUILD_DIR):
-	mkdir -p $(BUILD_DIR)
-	mkdir -p $(BUILD_DIR)/Core/Src
-	mkdir -p $(BUILD_DIR)/Drivers/STM32F4xx_HAL_Driver/Src
-	mkdir -p $(BUILD_DIR)/Core/Startup
-
-# -------- HAL --------
-$(BUILD_DIR)/Drivers/STM32F4xx_HAL_Driver/Src/%.o: Drivers/STM32F4xx_HAL_Driver/Src/%.c | $(BUILD_DIR)
-	$(CC) -c $(CFLAGS_HAL) $(INCLUDES) -MMD -MP $< -o $@
-
-# -------- TU CODIGO --------
-$(BUILD_DIR)/Core/Src/%.o: Core/Src/%.c | $(BUILD_DIR)
+#######################################
+# Compile rules
+#######################################
+$(BUILD_DIR)/Core/Src/%.o: Core/Src/%.c
+	mkdir -p $(dir $@)
 	$(CC) -c $(CFLAGS_USER) $(INCLUDES) -MMD -MP $< -o $@
 
-# -------- STARTUP --------
-$(BUILD_DIR)/%.o: %.s | $(BUILD_DIR)
+$(BUILD_DIR)/Drivers/STM32F4xx_HAL_Driver/Src/%.o: Drivers/STM32F4xx_HAL_Driver/Src/%.c
+	mkdir -p $(dir $@)
+	$(CC) -c $(CFLAGS_HAL) $(INCLUDES) -MMD -MP $< -o $@
+
+$(BUILD_DIR)/%.o: %.s
+	mkdir -p $(dir $@)
 	$(AS) -c $(ASFLAGS) $< -o $@
 
-# -------- LINK --------
+#######################################
+# Link
+#######################################
 $(BUILD_DIR)/$(PROJECT).elf: $(OBJECTS)
+	mkdir -p $(BUILD_DIR)
 	$(CC) $(OBJECTS) $(LDFLAGS) -o $@
 	$(SZ) $@
 
